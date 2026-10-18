@@ -8,6 +8,7 @@ module DoomFlight {
     rateGroup10Hz
     rateGroup1Hz
     rateGroupDoom
+    rateGroupTlm
   }
 
   deployment topology DoomFlight {
@@ -33,6 +34,7 @@ module DoomFlight {
     instance rateGroup10Hz
     instance rateGroup1Hz
     instance rateGroupDoom
+    instance rateGroupTlm
     instance fileUplink
     instance rateGroupDriver
     instance timer
@@ -154,7 +156,6 @@ module DoomFlight {
       rateGroup1Hz.RateGroupMemberOut[0] -> ComCcsds.comQueue.run
       rateGroup1Hz.RateGroupMemberOut[1] -> CdhCore.$health.Run
       rateGroup1Hz.RateGroupMemberOut[2] -> ComCcsds.commsBufferManager.schedIn
-      rateGroup1Hz.RateGroupMemberOut[3] -> CdhCore.tlmSend.Run
       rateGroup1Hz.RateGroupMemberOut[4] -> ComCcsds.aggregator.timeout
       rateGroup1Hz.RateGroupMemberOut[5] -> CdhCore.Subtopology.eventsRun
       rateGroup1Hz.RateGroupMemberOut[6] -> hubBufferManager.schedIn
@@ -163,6 +164,9 @@ module DoomFlight {
       # DOOM rate group (DOOM_RATE_HZ in DoomFlightTopology.cpp): one engine tick per cycle
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroupDoom] -> rateGroupDoom.CycleIn
       rateGroupDoom.RateGroupMemberOut[0] -> DoomSubtopology.doom.schedIn
+
+      rateGroupDriver.CycleOut[Ports_RateGroups.rateGroupTlm] -> rateGroupTlm.CycleIn
+      rateGroupTlm.RateGroupMemberOut[0] -> CdhCore.tlmSend.Run
     }
 
     connections DoomFlight {

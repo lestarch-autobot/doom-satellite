@@ -35,6 +35,12 @@ constexpr FwSizeType getRateGroupPeriod(const FwSizeType hz) {
 // downlink. The engine paces game time per tick, so play runs at 30/35 of real time. The 640x400 upscale and a
 // frame copy used to cost ~50 ms more and forced 5 Hz. See the rateGroupDoom comment in instances.fpp.
 constexpr FwSizeType DOOM_RATE_HZ = 30;
+// Ground frame rate: one TlmPacketizer run per tick of rateGroupTlm. A complete 80x50 frame is 51 packets (palette +
+// 50 rows), ~7.5 kB on the wire. Measured on the Teensy with the engine at 30 Hz: 10 Hz and above starve the engine
+// until health reports rateGroupDoom's ping late (~113 kB/s is also where the CDC link tops out); 5 Hz still pulls
+// the engine down to ~22 Hz; 2 Hz keeps it at ~29 Hz with ~300 rate group slips/min (1 Hz: ~16/min). A higher
+// ground rate needs a cheaper encoding than 51 channel packets per frame.
+constexpr FwSizeType TLM_RATE_HZ = 2;
 
 // The 1 kHz base timer is divided into the 10Hz, 1Hz and DOOM rate groups with 0 offset
 Svc::RateGroupDriver::DividerSet rateGroupDivisorsSet{{
@@ -42,6 +48,7 @@ Svc::RateGroupDriver::DividerSet rateGroupDivisorsSet{{
     {getRateGroupPeriod(10), 0},            // 10Hz
     {getRateGroupPeriod(1), 0},             // 1Hz
     {getRateGroupPeriod(DOOM_RATE_HZ), 0},  // DOOM
+    {getRateGroupPeriod(TLM_RATE_HZ), 0},   // telemetry packetizer (ground frame rate)
 }};
 
 // Rate groups may supply a context token to each of the attached children whose purpose is set by the project. The
@@ -50,6 +57,7 @@ U32 rateGroup10HzContext[Svc::ActiveRateGroup::CONNECTION_COUNT_MAX] = {getRateG
 U32 rateGroup1HzContext[Svc::ActiveRateGroup::CONNECTION_COUNT_MAX] = {getRateGroupPeriod(1)};
 U32 rateGroupDoomContext[Svc::ActiveRateGroup::CONNECTION_COUNT_MAX] = {
     static_cast<U32>(getRateGroupPeriod(DOOM_RATE_HZ) * BASE_RATEGROUP_PERIOD_MS * 1000)};
+U32 rateGroupTlmContext[Svc::ActiveRateGroup::CONNECTION_COUNT_MAX] = {getRateGroupPeriod(TLM_RATE_HZ)};
 
 enum TopologyConstants {
     HUB_BUFFER_MANAGER_ID = 300,
@@ -97,6 +105,7 @@ void configureTopology(const TopologyState& state) {
     rateGroup10Hz.configure(rateGroup10HzContext, FW_NUM_ARRAY_ELEMENTS(rateGroup10HzContext));
     rateGroup1Hz.configure(rateGroup1HzContext, FW_NUM_ARRAY_ELEMENTS(rateGroup1HzContext));
     rateGroupDoom.configure(rateGroupDoomContext, FW_NUM_ARRAY_ELEMENTS(rateGroupDoomContext));
+    rateGroupTlm.configure(rateGroupTlmContext, FW_NUM_ARRAY_ELEMENTS(rateGroupTlmContext));
     // Reboot into the bootloader when the host opens the console at the board's touch baud rate
     if (touchReset.configure(state.uartDevice) != Fw::Success::SUCCESS) {
         printk("Touch reset unavailable\n");

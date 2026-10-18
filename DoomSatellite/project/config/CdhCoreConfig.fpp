@@ -5,7 +5,7 @@ module CdhCoreConfig {
     module QueueSizes {
         constant cmdDisp     = 10
         constant events      = 25
-        constant tlmSend     = 5
+        constant tlmSend     = 10
         constant $health     = 10
     }
     
@@ -20,7 +20,7 @@ module CdhCoreConfig {
         constant cmdDisp     = 10
         constant $health     = 11
         constant events      = 12
-        constant tlmSend     = 13
+        constant tlmSend     = 8   # above rateGroupDoom (9): a packetizer run is executed per tick, never queued behind the engine
     }
 
     module CpuAffinities {

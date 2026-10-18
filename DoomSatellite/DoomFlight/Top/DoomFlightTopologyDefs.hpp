@@ -58,6 +58,9 @@ enum { WARN = 3, FATAL = 5 };
 namespace DoomFlight_rateGroupDoom {
 enum { WARN = 3, FATAL = 5 };
 }
+namespace DoomFlight_rateGroupTlm {
+enum { WARN = 3, FATAL = 5 };
+}
 namespace DoomFlight_fileUplink {
 enum { WARN = 3, FATAL = 5 };
 }

@@ -112,6 +112,11 @@ cannot be confirmed from the ground). Useful channels: `DoomSubtopology.doom.Fra
 from its delta, the nominal `FrameRateHz` channel is virtual), `DoomSubtopology.frameTlmProcessor.FramesDropped`,
 `DoomFlight.rateGroupDoom.RgCycleSlips`.
 
+The engine renders at 30 Hz, but the ground sees complete frames at the rate of `rateGroupTlm` (`TLM_RATE_HZ` in
+`DoomSatellite/DoomFlight/Top/DoomFlightTopology.cpp`, 2 Hz): every frame is 51 telemetry packets (palette + 50 rows),
+and on the Teensy 5 Hz already costs the engine a quarter of its ticks while 10 Hz and up trip the health ping on
+`rateGroupDoom`. 1 Hz is the slip-free setting; 2 Hz trades ~300 `rateGroupDoom` cycle slips a minute for the rate.
+
 `fprime-gds` reads the same `fprime-gds.yml` (ignoring the `yamcs-*` keys with a warning) and works for commanding and
 telemetry without the display: `fprime-gds`.
 

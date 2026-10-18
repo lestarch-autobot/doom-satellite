@@ -5,6 +5,7 @@
 # Zephyr and are only applied to the Zephyr (DoomFlight) build; other platforms use the F Prime defaults.
 ####
 set(DOOM_CONFIG_OVERRIDES
+    "${CMAKE_CURRENT_LIST_DIR}/AcConstants.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/CdhCoreConfig.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/CdhCoreTlmConfig.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/CdhCoreFatalHandlerConfig.fpp"
@@ -21,6 +22,7 @@ if (FPRIME_PLATFORM STREQUAL "Zephyr")
     list(APPEND DOOM_CONFIG_OVERRIDES
         "${CMAKE_CURRENT_LIST_DIR}/IpCfg.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/PlatformCfg.fpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ZephyrUartDriverCfg.hpp"
     )
 endif()
 

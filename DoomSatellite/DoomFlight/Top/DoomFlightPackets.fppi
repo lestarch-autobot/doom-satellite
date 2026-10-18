@@ -10,6 +10,7 @@ telemetry packets DoomFlightPackets {
     rateGroup10Hz.RgMaxTime
     rateGroup1Hz.RgMaxTime
     rateGroupDoom.RgMaxTime
+    rateGroupTlm.RgMaxTime
   }
 
   packet HealthWarnings id 2 group 1 {
@@ -24,6 +25,7 @@ telemetry packets DoomFlightPackets {
     rateGroup10Hz.RgCycleSlips
     rateGroup1Hz.RgCycleSlips
     rateGroupDoom.RgCycleSlips
+    rateGroupTlm.RgCycleSlips
     fileUplink.Warnings
   }
 

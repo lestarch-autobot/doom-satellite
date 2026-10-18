@@ -50,7 +50,16 @@ module DoomFlight {
   instance rateGroupDoom: Svc.ActiveRateGroup base id 0x10003000 \
     queue size 60 \
     stack size Default.STACK_SIZE \
-    priority 14
+    priority 9
+
+  @ Ticks the telemetry packetizer at the DOOM rate so one complete frame reaches the ground per engine tick. Kept off
+  @ rateGroupDoom on purpose: that group's 60-deep queue replays every tick missed during a level/demo stall, which
+  @ would turn into a burst of packetizer runs; here the queue is shallow and ActiveRateGroup drops the excess cycles.
+  @ The group and tlmSend sit above the DOOM thread so each run is bounded work stolen from the engine, never a backlog.
+  instance rateGroupTlm: Svc.ActiveRateGroup base id 0x10005000 \
+    queue size 2 \
+    stack size Default.STACK_SIZE \
+    priority 7
 
   @ Receives files from the ground (the DOOM WAD) into the LittleFS mount at /lfs
   instance fileUplink: Svc.FileUplink base id 0x10004000 \
