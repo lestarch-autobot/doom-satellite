@@ -22,6 +22,13 @@ class EngineProfiler final : public EngineProfilerComponentBase {
 
     //! Convert a cycle count to whole microseconds at the hook clock rate
     static U32 toUs(U64 cycles, U32 cyclesPerSecond);
+
+  public:
+    //! Record the hwinfo reset cause of this boot for the ResetCause channel (called from Main before the topology starts)
+    static void setResetCause(U32 cause);
+
+  private:
+    static U32 s_resetCause;
 };
 
 }  // namespace Components

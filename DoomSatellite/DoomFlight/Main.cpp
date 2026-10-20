@@ -4,6 +4,7 @@
 //
 // ======================================================================
 // Used to access topology functions
+#include <DoomSatellite/Components/EngineProfiler/EngineProfiler.hpp>
 #include <DoomSatellite/DoomFlight/Top/DoomFlightTopology.hpp>
 #include <Fw/Types/Assert.hpp>
 #include <Os/Os.hpp>
@@ -180,6 +181,7 @@ static RecordingAssertHook recordingAssertHook;
 static void bootWindow() {
     U32 resetCause = 0;
     (void)hwinfo_get_reset_cause(&resetCause);
+    Components::EngineProfiler::setResetCause(resetCause);
     (void)hwinfo_clear_reset_cause();
 #if defined(CONFIG_BOARD_TEENSY41)
     configureEthernetPhy();

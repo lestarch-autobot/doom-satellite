@@ -5,7 +5,9 @@
 
 #include "DoomSatellite/Components/FrameStreamer/FrameStreamer.hpp"
 
+#include <cerrno>
 #include <cstring>
+#include <fcntl.h>
 
 #include "Fw/Types/Assert.hpp"
 #include "Os/RawTime.hpp"
@@ -18,7 +20,8 @@ static constexpr U8 KIND_PALETTE = 1;
 static constexpr U8 FLAG_LAST = 0x01;
 static constexpr U32 CHUNK_MAGIC = 0x44534631;  // "DSF1"
 static constexpr U32 SEND_TIMEOUT_US = 100000;  // one chunk waits at most this long for TX buffers
-static constexpr U32 SEND_BACKOFF_US = 250000;  // pause after a failed frame
+static constexpr I32 NONBLOCK_FAILED_BASE = 1000;  // SocketFailed status = 1000 + errno from fcntl
+static constexpr U32 SEND_BACKOFF_US = 2000;  // let the net TX thread drain after a dropped frame
 
 FrameStreamer* FrameStreamer::s_instance = nullptr;
 
@@ -42,6 +45,7 @@ FrameStreamer::FrameStreamer(const char* const compName)
       m_framesSkipped(0),
       m_chunksSent(0),
       m_sendErrors(0),
+      m_sendFailing(false),
       m_txTimeMaxUs(0),
       m_copyTimeMaxUs(0),
       m_lastTlmSeconds(0) {
@@ -178,6 +182,12 @@ bool FrameStreamer::ensureSocket() {
             return false;
         }
         this->m_socketOpen = true;
+        // Fail fast: a non-blocking socket makes Zephyr allocate packets/buffers with K_NO_WAIT, so a full TX pool
+        // returns EAGAIN at once instead of sleeping for up to CONFIG_NET_SOCKET_MAX_SEND_WAIT (10 s). Latest-wins
+        // then drops the frame (SendErrors) rather than stalling this thread.
+        if (::fcntl(this->m_descriptor.fd, F_SETFL, O_NONBLOCK) != 0) {
+            this->log_WARNING_HI_SocketFailed(static_cast<I32>(NONBLOCK_FAILED_BASE + errno));
+        }
     }
     return true;
 }
@@ -219,12 +229,17 @@ bool FrameStreamer::sendChunk(U32 seq, U8 kind, U32 offset, const U8* data, U32 
         this->m_socket.send(this->m_descriptor, this->m_datagram, CHUNK_HEADER_BYTES + length);
     if (status != Drv::SOCK_SUCCESS) {
         this->m_sendErrors++;
-        this->log_WARNING_LO_SendFailed(static_cast<I32>(status));
+        if (!this->m_sendFailing) {
+            // Only the first failure of a run is reported; the counter carries the rest (46 chunks per frame)
+            this->m_sendFailing = true;
+            this->log_WARNING_LO_SendFailed(static_cast<I32>(status));
+        }
         if (status == Drv::SOCK_DISCONNECTED) {
             this->closeSocket();
         }
         return false;
     }
+    this->m_sendFailing = false;
     this->m_chunksSent++;
     return true;
 }
@@ -263,6 +278,7 @@ void FrameStreamer::writeTelemetry() {
     this->tlmWrite_FramesSkipped(this->m_framesSkipped, now);
     this->tlmWrite_ChunksSent(this->m_chunksSent, now);
     this->tlmWrite_SendErrors(this->m_sendErrors, now);
+    this->tlmWrite_FramesLinkDown(this->m_framesLinkDown, now);
     this->tlmWrite_TxTimeMaxUs(this->m_txTimeMaxUs, now);
     this->tlmWrite_CopyTimeMaxUs(this->m_copyTimeMaxUs, now);
 }

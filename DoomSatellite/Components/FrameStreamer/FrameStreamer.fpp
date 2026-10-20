@@ -59,6 +59,8 @@ module Components {
 
     @ Captured frames replaced by a newer one before they were sent (latest wins)
     telemetry FramesSkipped: U32
+    @ Frames dropped because the Ethernet carrier was down (subset of FramesSkipped)
+    telemetry FramesLinkDown: U32
 
     @ Chunk datagrams sent
     telemetry ChunksSent: U32

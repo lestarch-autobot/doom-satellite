@@ -13,6 +13,9 @@ module Components {
     @ Ticks completed in the window
     telemetry Ticks: U32
 
+    @ Reset cause register (hwinfo) of this boot, as reported by Main
+    telemetry ResetCause: U32
+
     @ Longest doomgeneric_Tick in the window, microseconds
     telemetry TickMaxUs: U32
     @ Mean doomgeneric_Tick in the window, microseconds

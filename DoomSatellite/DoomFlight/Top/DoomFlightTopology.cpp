@@ -50,7 +50,7 @@ constexpr FwSizeType DOOM_RATE_HZ = 30;
 // until health reports rateGroupDoom's ping late (~113 kB/s is also where the CDC link tops out); 5 Hz still pulls
 // the engine down to ~22 Hz; 2 Hz keeps it at ~29 Hz with ~300 rate group slips/min (1 Hz: ~16/min). A higher
 // ground rate needs a cheaper encoding than 51 channel packets per frame.
-constexpr FwSizeType TLM_RATE_HZ = 2;
+constexpr FwSizeType TLM_RATE_HZ = 3;
 
 // The 1 kHz base timer is divided into the 10Hz, 1Hz and DOOM rate groups with 0 offset
 Svc::RateGroupDriver::DividerSet rateGroupDivisorsSet{{
@@ -76,7 +76,7 @@ enum TopologyConstants {
     HUB_LARGE_BUFFER_SIZE = 4096,  // UDP receive buffers and packed frames (4,009 bytes, 4,025 with the hub header)
     HUB_LARGE_BUFFER_COUNT = 12,
     STREAM_PORT = 50601,  // raw UDP native-frame stream to the coprocessor (Components::FrameStreamer)
-    STREAM_DIVISOR = 2,   // boot at 15 fps; frameStreamer SET_RATE 1 streams every engine frame
+    STREAM_DIVISOR = 2,   // boot at 15 fps (measured ceiling, PR #10); frameStreamer SET_RATE 1 streams every engine frame
     HUB_RECV_PRIORITY = 5,
     HUB_RECONNECT_PRIORITY = 6,
 };

@@ -73,6 +73,7 @@ telemetry packets DoomFlightPackets {
   @ Per-phase CPU budget of the DOOM tick (Components.EngineProfiler), 1 Hz
   packet EngineBudget id 0x102 group 1 {
     engineProfiler.Ticks
+    engineProfiler.ResetCause
     engineProfiler.TickMaxUs
     engineProfiler.TickAvgUs
     engineProfiler.RenderMaxUs
@@ -87,6 +88,7 @@ telemetry packets DoomFlightPackets {
     frameHandoff.DeliverMaxUs
     frameStreamer.FramesSent
     frameStreamer.FramesSkipped
+    frameStreamer.FramesLinkDown
     frameStreamer.ChunksSent
     frameStreamer.SendErrors
     frameStreamer.TxTimeMaxUs

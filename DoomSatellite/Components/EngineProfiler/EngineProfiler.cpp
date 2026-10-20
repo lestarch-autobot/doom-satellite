@@ -16,12 +16,19 @@ U32 EngineProfiler::toUs(U64 cycles, U32 cyclesPerSecond) {
     return static_cast<U32>((cycles * 1000000ULL) / cyclesPerSecond);
 }
 
+U32 EngineProfiler::s_resetCause = 0;
+
+void EngineProfiler::setResetCause(U32 cause) {
+    s_resetCause = cause;
+}
+
 void EngineProfiler::schedIn_handler(FwIndexType portNum, U32 context) {
     struct engine_hooks_stats stats;
     engine_hooks_snapshot(&stats);
     const U32 hz = stats.cycles_per_second;
 
     this->tlmWrite_Ticks(stats.tick.count);
+    this->tlmWrite_ResetCause(s_resetCause);
 
     const struct engine_hooks_phase* const phases[] = {&stats.tick, &stats.render, &stats.blit, &stats.emit};
     U32 maxUs[FW_NUM_ARRAY_ELEMENTS(phases)];
