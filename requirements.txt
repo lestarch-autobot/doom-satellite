@@ -11,3 +11,9 @@ west
 # Project tools (install from the repository root): WAD fetch and the Teensy WAD image merge
 ./lib/fprime-stress/tools/fprime-get-doom
 ./tools/doom-satellite-tools
+
+# fprime-python: Python component bindings for DoomCoprocessor. fprime-python-model must match the fprime-fpp version
+# pinned by lib/fprime/requirements.txt.
+./lib/fprime-python/
+pybind11==3.0.2
+fprime-python-model==3.4.0

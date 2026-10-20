@@ -8,11 +8,15 @@ module DoomCoprocessor {
     rateGroup1Hz
   }
 
+  @ GenericHub bufferIn/bufferOut port carrying the packed DOOM frames and palettes (same index on DoomFlight)
+  constant HUB_FRAME_PORT = 0
+
   deployment topology DoomCoprocessor {
 
   # ----------------------------------------------------------------------
   # Instances used in the topology. The DOOM engine, downsampler and frame telemetry run on DoomFlight; this
-  # deployment is the remote end of DoomFlight's GenericHub (commands in, events out).
+  # deployment is the remote end of DoomFlight's GenericHub (commands in, events out, packed frames in) and reads the
+  # downsampled frames in Python (frameReader).
   # ----------------------------------------------------------------------
     instance cmdDisp
     instance chronoTime
@@ -23,6 +27,8 @@ module DoomCoprocessor {
     instance rateGroup1Hz
     instance rateGroupDriver
     instance linuxTimer
+    instance frameAdapter
+    instance frameReader
 
   # ----------------------------------------------------------------------
   # Pattern graph specifiers
@@ -35,7 +41,12 @@ module DoomCoprocessor {
     event connections instance hub {
       cmdDisp
       rateGroup1Hz
+      frameAdapter
+      frameReader
     }
+
+    # No telemetry connections: DoomFlight's TlmPacketizer only knows its own channels, so remote channels sent over
+    # hub.tlmOut would be dropped there. frameReader reports its counters on its console instead.
 
     time connections instance chronoTime
 
@@ -53,6 +64,15 @@ module DoomCoprocessor {
     connections HubCommands {
       hub.cmdDispOut -> cmdDisp.seqCmdBuff
       cmdDisp.seqCmdStatus -> hub.cmdRespIn
+    }
+
+    connections Frames {
+      # Packed frames and palettes from DoomFlight: hub -> unpack -> Python reader. The unpacked frame is a borrowed
+      # view of the hub buffer, valid only during the synchronous call chain; the buffer returns to the hub after.
+      hub.bufferOut[HUB_FRAME_PORT] -> frameAdapter.packedIn
+      frameAdapter.packedInReturn   -> hub.bufferOutReturn[HUB_FRAME_PORT]
+      frameAdapter.frameOut         -> frameReader.frameIn
+      frameAdapter.paletteOut       -> frameReader.paletteIn
     }
 
     connections Hub {

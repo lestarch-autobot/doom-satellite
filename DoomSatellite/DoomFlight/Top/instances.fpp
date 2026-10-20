@@ -99,4 +99,10 @@ module DoomFlight {
 
   instance cmdSplitter: Svc.CmdSplitter base id 0x1001B000
 
+  @ Repeats each downsampled frame and palette to the row telemetry processor and to the hub packer
+  instance frameRepeater: Components.FrameRepeater base id 0x1001C000
+
+  @ Packs the repeated frames and palettes into hub buffers for DoomCoprocessor
+  instance frameAdapter: Components.FrameBufferAdapter base id 0x1001D000
+
 }

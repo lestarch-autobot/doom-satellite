@@ -2,13 +2,14 @@
 # DoomSatellite/project/config/CMakeLists.txt:
 #
 # Project configuration overrides. PlatformCfg.fpp (OS handle sizes) and IpCfg.hpp (socket headers) are tuned for
-# Zephyr and are only applied to the Zephyr (DoomFlight) build; other platforms use the F Prime defaults.
+# Zephyr and are only applied to the Zephyr (DoomFlight) build; other platforms use the F Prime defaults. The CdhCore
+# fatal handler override selects Components.FatalHandler, which only exists on Zephyr: elsewhere the default
+# Svc.FatalHandler keeps the (unused) CdhCore model resolvable for the fpp-to-json step of fprime-python.
 ####
 set(DOOM_CONFIG_OVERRIDES
     "${CMAKE_CURRENT_LIST_DIR}/AcConstants.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/CdhCoreConfig.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/CdhCoreTlmConfig.fpp"
-    "${CMAKE_CURRENT_LIST_DIR}/CdhCoreFatalHandlerConfig.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/ComCcsdsConfig.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/ComCfg.fpp"
     "${CMAKE_CURRENT_LIST_DIR}/CommandDispatcherImplCfg.hpp"
@@ -20,6 +21,7 @@ set(DOOM_CONFIG_OVERRIDES
 )
 if (FPRIME_PLATFORM STREQUAL "Zephyr")
     list(APPEND DOOM_CONFIG_OVERRIDES
+        "${CMAKE_CURRENT_LIST_DIR}/CdhCoreFatalHandlerConfig.fpp"
         "${CMAKE_CURRENT_LIST_DIR}/IpCfg.hpp"
         "${CMAKE_CURRENT_LIST_DIR}/PlatformCfg.fpp"
         "${CMAKE_CURRENT_LIST_DIR}/ZephyrUartDriverCfg.hpp"

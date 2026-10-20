@@ -38,6 +38,9 @@ telemetry packets DoomFlightPackets {
     DoomSubtopology.doomBufferManager.TotalBuffs
     hubBufferManager.CurrBuffs
     DoomSubtopology.doomBufferManager.CurrBuffs
+    frameRepeater.FramesRepeated
+    frameAdapter.FramesPacked
+    frameAdapter.PackedRejected
     CdhCore.tlmSend.GroupConfigs
     CdhCore.tlmSend.SectionEnabled
     fileUplink.FilesReceived
@@ -231,6 +234,13 @@ telemetry packets DoomFlightPackets {
   comDriver.TxBytes
   comDriver.TxDropCount
   CdhCore.cmdDisp.CommandErrors
+  # Hub frame path: per-frame counters beyond FramesPacked, and the unpack side this deployment does not use
+  frameRepeater.PalettesRepeated
+  frameAdapter.PalettesPacked
+  frameAdapter.FramesUnpacked
+  frameAdapter.FramesRejected
+  frameAdapter.PalettesUnpacked
+  frameAdapter.PalettesRejected
   # Only has one library, no custom versions
   CdhCore.version.LibraryVersion03
   CdhCore.version.LibraryVersion04

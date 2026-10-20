@@ -127,7 +127,19 @@ coprocessor 192.168.11.2, ports 50555/50556; see `DoomSatellite/DoomCoprocessor/
 
 ```bash
 fprime-util generate native && fprime-util build native -j"$(nproc)"
-build-artifacts/Linux/DoomSatellite_DoomCoprocessor/bin/DoomSatellite_DoomCoprocessor -a <teensy address>
+python3 build-artifacts/python/fsw_main.py -a <teensy address> -f 127.0.0.1:50600   # runs under Python (fprime-python)
+```
+
+DoomFlight packs a copy of every downsampled frame and palette for the hub (`frameRepeater` → `frameAdapter` →
+`hub.bufferIn`); the coprocessor unpacks them (`frameAdapter`) into the Python `frameReader` component
+(`DoomSatellite/Components/DoomFrameReader`, fprime-python), which prints its counters and, with `-f host:port`,
+forwards the frames to the viewer. Host tools (installed by `requirements.txt`):
+
+```bash
+doom-satellite-view --source udp --bind 127.0.0.1:50600     # Tk window fed by frameReader
+doom-satellite-view --source yamcs                          # same window fed from fprime-yamcs FrameRow*/PaletteOut
+doom-satellite-hub-bridge                                   # no Teensy Ethernet? re-create the hub frame feed from
+                                                            # the UART frames in fprime-yamcs -> coprocessor UDP 50555
 ```
 
 ## 7. Tests

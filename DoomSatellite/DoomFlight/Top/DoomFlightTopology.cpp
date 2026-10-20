@@ -5,6 +5,7 @@
 // ======================================================================
 // Provides access to autocoded functions
 #include <DoomSatellite/DoomFlight/Top/DoomFlightTopologyAc.hpp>
+#include <DoomSatellite/DoomFlight/Top/Ports_FrameRepeaterEnumAc.hpp>
 
 // Necessary project-specified types
 #include <Fw/Types/MallocAllocator.hpp>
@@ -123,6 +124,11 @@ void configureTopology(const TopologyState& state) {
     (void)hubComDriver.configureRecv("0.0.0.0", state.hubLocalPort, HUB_LARGE_BUFFER_SIZE);
 
     cmdSplitter.configure(REMOTE_BASE_OPCODE);
+    // The hub slot runs hubComDriver's synchronous UDP send in the DOOM rate group thread; with the coprocessor
+    // unreachable (no ARP reply for hubRemoteAddress) that send blocked the engine for good on the bench
+    // (FrameCount froze at 11 while the 1 Hz group kept running). Start with the slot off; enable it from the
+    // ground with frameRepeater SET_OUTPUT(HUB, ENABLED) once the coprocessor answers on the link.
+    frameRepeater.setOutputEnabled(static_cast<FwIndexType>(DoomFlight::Ports_FrameRepeater::HUB), false);
 
     fileUplink.configure((state.fileUplinkDirectory != nullptr) ? state.fileUplinkDirectory : "/");
 

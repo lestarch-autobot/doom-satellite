@@ -12,3 +12,6 @@
 [submodule "lib/fprime-stress"]
 	path = lib/fprime-stress
 	url = https://github.com/LeStarch/fprime-stress.git
+[submodule "lib/fprime-python"]
+	path = lib/fprime-python
+	url = https://github.com/fprime-community/fprime-python.git

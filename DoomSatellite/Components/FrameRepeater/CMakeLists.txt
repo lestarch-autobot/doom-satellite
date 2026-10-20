@@ -1,0 +1,19 @@
+register_fprime_library(
+    AUTOCODER_INPUTS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameRepeater.fpp"
+    SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/FrameRepeater.cpp"
+    HEADERS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameRepeater.hpp"
+)
+
+register_fprime_ut(
+    AUTOCODER_INPUTS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameRepeater.fpp"
+    SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/test/ut/FrameRepeaterTester.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/test/ut/FrameRepeaterTestMain.cpp"
+    HEADERS
+        "${CMAKE_CURRENT_LIST_DIR}/test/ut/FrameRepeaterTester.hpp"
+    UT_AUTO_HELPERS
+)

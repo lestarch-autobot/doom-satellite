@@ -11,6 +11,15 @@ module DoomFlight {
     rateGroupTlm
   }
 
+  @ frameRepeater output slots: the local row telemetry and the hub packer
+  enum Ports_FrameRepeater {
+    LOCAL
+    HUB
+  }
+
+  @ GenericHub bufferIn/bufferOut port carrying the packed DOOM frames and palettes (same index on DoomCoprocessor)
+  constant HUB_FRAME_PORT = 0
+
   deployment topology DoomFlight {
 
   # ----------------------------------------------------------------------
@@ -46,6 +55,8 @@ module DoomFlight {
     instance hubComDriver
     instance hubByteStreamAdapter
     instance hubBufferManager
+    instance frameRepeater
+    instance frameAdapter
 
   # ----------------------------------------------------------------------
   # Pattern graph specifiers
@@ -116,11 +127,18 @@ module DoomFlight {
     }
 
     connections FramePipeline {
-      # Synchronous on the rateGroupDoom thread: engine -> downsampler -> row and palette telemetry
+      # Synchronous on the rateGroupDoom thread: engine -> downsampler -> repeater -> row and palette telemetry,
+      # plus a packed copy of each frame and palette to DoomCoprocessor over the hub
       DoomSubtopology.doom.frameOut               -> DoomSubtopology.frameDownsampler.frameIn
       DoomSubtopology.doom.paletteOut             -> DoomSubtopology.frameDownsampler.paletteIn
-      DoomSubtopology.frameDownsampler.frameOut   -> DoomSubtopology.frameTlmProcessor.frameIn
-      DoomSubtopology.frameDownsampler.paletteOut -> DoomSubtopology.frameTlmProcessor.paletteIn
+      DoomSubtopology.frameDownsampler.frameOut   -> frameRepeater.frameIn
+      DoomSubtopology.frameDownsampler.paletteOut -> frameRepeater.paletteIn
+      frameRepeater.frameOut[Ports_FrameRepeater.LOCAL]   -> DoomSubtopology.frameTlmProcessor.frameIn
+      frameRepeater.paletteOut[Ports_FrameRepeater.LOCAL] -> DoomSubtopology.frameTlmProcessor.paletteIn
+      frameRepeater.frameOut[Ports_FrameRepeater.HUB]     -> frameAdapter.frameIn
+      frameRepeater.paletteOut[Ports_FrameRepeater.HUB]   -> frameAdapter.paletteIn
+      frameAdapter.packedOut             -> hub.bufferIn[HUB_FRAME_PORT]
+      hub.bufferInReturn[HUB_FRAME_PORT] -> frameAdapter.packedOutReturn
     }
 
     connections Hub {
