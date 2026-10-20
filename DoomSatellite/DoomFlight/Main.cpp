@@ -26,7 +26,8 @@
 
 const struct device* serial = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_uart0));
 #if defined(CONFIG_BOARD_TEENSY41)
-extern "C" void psram_heap_report(void);  // PsramHeap.c
+extern "C" void psram_heap_report(void);     // PsramHeap.c
+extern "C" void screen_buffers_report(void);  // ScreenBuffers.c
 #endif
 
 //! Seconds the CDC ACM port is watched for a touch reset before the topology starts
@@ -251,6 +252,9 @@ int main(int argc, char* argv[]) {
 #endif
     printk("DoomFlight: setting up topology\n");
     DoomFlight::setupTopology(inputs);
+#if defined(CONFIG_BOARD_TEENSY41)
+    screen_buffers_report();  // after setup: the engine allocated its buffers in setupTopology
+#endif
     recordingAssertHook.install();  // after setup: wraps the AssertFatalAdapter hook registered during init
     printk("DoomFlight: starting rate groups\n");
     DoomFlight::startRateGroups();  // Program loop

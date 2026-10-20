@@ -88,7 +88,14 @@ static void* psram_alloc(size_t size) {
     return ptr;
 }
 
+extern void* screen_buffers_claim(size_t size);  // ScreenBuffers.c
+extern int screen_buffers_owns(const void* ptr);
+
 void* __wrap_malloc(size_t size) {
+    void* dtcm = screen_buffers_claim(size);
+    if (dtcm != NULL) {
+        return dtcm;
+    }
     if (psram_ready && (size >= PSRAM_HEAP_THRESHOLD)) {
         void* ptr = psram_alloc(size);
         if (ptr != NULL) {
@@ -101,6 +108,9 @@ void* __wrap_malloc(size_t size) {
 }
 
 void __wrap_free(void* ptr) {
+    if (screen_buffers_owns(ptr)) {
+        return;
+    }
     if (in_psram(ptr)) {
         k_spinlock_key_t key = k_spin_lock(&psram_lock);
         sys_heap_free(&psram_heap, ptr);
