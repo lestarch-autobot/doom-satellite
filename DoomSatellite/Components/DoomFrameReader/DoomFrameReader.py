@@ -38,6 +38,7 @@ CHUNK_KIND_PIXELS = 0
 CHUNK_KIND_PALETTE = 1
 STREAM_DEFAULT_BIND = "0.0.0.0:50601"
 STREAM_STATUS_SECONDS = 10.0
+STREAM_LATE_WINDOW = 8  # chunks this far behind the current frame are stragglers; further back = sender restarted
 
 
 class StreamFrame:
@@ -107,10 +108,10 @@ class DoomFrameReader(DoomFrameReaderBase):
             self.stream_bytes += len(data)
             if current is None or seq != current.seq:
                 if current is not None and not current.complete():
-                    if seq > current.seq or (current.seq - seq) > 0x7FFFFFFF:
-                        self.stream_incomplete += 1
-                    else:
-                        continue  # late chunk of an older frame
+                    behind = (current.seq - seq) & 0xFFFFFFFF
+                    if 0 < behind < STREAM_LATE_WINDOW:
+                        continue  # late chunk of a frame already superseded
+                    self.stream_incomplete += 1  # newer frame, or the sender restarted its sequence
                 current = StreamFrame(seq, width, height)
             if kind == CHUNK_KIND_PALETTE:
                 current.palette = bytes(payload[:PALETTE_BYTES])
