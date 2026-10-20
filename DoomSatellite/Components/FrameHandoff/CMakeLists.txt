@@ -1,0 +1,10 @@
+register_fprime_library(
+    AUTOCODER_INPUTS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameHandoff.fpp"
+    SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/FrameHandoff.cpp"
+    HEADERS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameHandoff.hpp"
+    DEPENDS
+        Doom_DoomConfig
+)

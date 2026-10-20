@@ -8,8 +8,9 @@ side of the `Svc.GenericHub` link. The engine, frame pipeline and YAMCS display 
 
 ```
 Teensy 4.1 (DoomFlight)                                        ground
- rateGroupDoom 30 Hz -> DoomEngine -> FrameDownsampler ---> FrameTlmProcessor -> TlmPacketizer -> CCSDS -> USB CDC
- /lfs/doom1.wad (LittleFS in program flash)   PSRAM: 6 MiB zone + screen buffer        |
+ rateGroupDoom 30 Hz -> DoomEngine -> FrameDownsampler -> FrameHandoff ~~> FrameTlmProcessor -> TlmPacketizer -> CCSDS -> USB CDC
+ /lfs/doom1.wad (LittleFS in program flash)   PSRAM: 6 MiB zone     (own thread)        |
+ DTCM: both 320x200 screen buffers; ITCM: renderer                                     |
                                                                                  fprime-yamcs + doom-display (browser)
 ```
 
@@ -115,7 +116,14 @@ from its delta, the nominal `FrameRateHz` channel is virtual), `DoomSubtopology.
 The engine renders at 30 Hz, but the ground sees complete frames at the rate of `rateGroupTlm` (`TLM_RATE_HZ` in
 `DoomSatellite/DoomFlight/Top/DoomFlightTopology.cpp`, 2 Hz): every frame is 51 telemetry packets (palette + 50 rows),
 and on the Teensy 5 Hz already costs the engine a quarter of its ticks while 10 Hz and up trip the health ping on
-`rateGroupDoom`. 1 Hz is the slip-free setting; 2 Hz trades ~300 `rateGroupDoom` cycle slips a minute for the rate.
+`rateGroupDoom`. 1 Hz is the slip-free setting; 2 Hz trades ~300 `rateGroupDoom` cycle slips a minute for the rate
+(~85 a minute since the engine budget work below).
+
+Engine budget (`DoomFlight.engineProfiler.*`, the `EngineBudget` packet, measured on the bench at 30 Hz): the
+tick averaged 19-30 ms of the 33 ms period with both screen buffers in PSRAM, 5.5 ms of it the blit from
+`I_VideoBuffer` to `DG_ScreenBuffer` and ~3 ms the synchronous row telemetry. With the buffers in DTCM
+(`ScreenBuffers.c`), the renderer in ITCM (`DoomFlight/CMakeLists.txt`) and the frame consumers on `frameHandoff`'s
+thread the tick averages 6-14 ms (blit 0.3 ms, emit 0.3 ms) and `rateGroupDoom.RgMaxTime` fell from 557 to 134 ms.
 
 `fprime-gds` reads the same `fprime-gds.yml` (ignoring the `yamcs-*` keys with a warning) and works for commanding and
 telemetry without the display: `fprime-gds`.
@@ -154,9 +162,9 @@ pytest --dictionary build-artifacts/zephyr/fprime-zephyr-deployment/dict/DoomFli
 
 | Path | Contents |
 | --- | --- |
-| `DoomSatellite/DoomFlight/` | Teensy deployment: topology, `Main.cpp`, `PsramHeap.c` (libc malloc >= 16 KiB served from PSRAM), `PsramClock.c` (FlexSPI2 at 120 MHz), `psram_sections.ld`, integration tests |
+| `DoomSatellite/DoomFlight/` | Teensy deployment: topology, `Main.cpp`, `PsramHeap.c` (libc malloc >= 16 KiB served from PSRAM), `PsramClock.c` (FlexSPI2 at 120 MHz), `ScreenBuffers.c` (engine screen buffers in DTCM), `EngineHooks.c` (per-phase tick timers), `psram_sections.ld`, integration tests |
 | `DoomSatellite/DoomCoprocessor/` | Linux hub endpoint |
-| `DoomSatellite/Components/` | Project components (hub frame adapter, null parameter DB, fatal handler) |
+| `DoomSatellite/Components/` | Project components (frame hand-off thread, frame repeater, hub frame adapter, engine profiler, null parameter DB, fatal handler) |
 | `boards/` | Zephyr board overlays and Kconfig fragments (`teensy41`, `adafruit_feather_rp2040`) |
 | `fprime-gds.yml`, `settings.ini` | Ground (fprime-yamcs / fprime-gds) and build (toolchain, default board) configuration |
 | `tools/doom-satellite-tools/` | `doom-satellite-merge-wad`: LittleFS WAD image merged into the Teensy hex |

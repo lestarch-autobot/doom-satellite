@@ -81,6 +81,10 @@ telemetry packets DoomFlightPackets {
     engineProfiler.BlitAvgUs
     engineProfiler.EmitMaxUs
     engineProfiler.EmitAvgUs
+    frameHandoff.FramesIn
+    frameHandoff.FramesOut
+    frameHandoff.FramesOverwritten
+    frameHandoff.DeliverMaxUs
   }
 
   packet DoomPalette id 0x101 group 1 {

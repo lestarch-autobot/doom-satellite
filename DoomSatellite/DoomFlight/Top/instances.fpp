@@ -105,6 +105,14 @@ module DoomFlight {
   @ Packs the repeated frames and palettes into hub buffers for DoomCoprocessor
   instance frameAdapter: Components.FrameBufferAdapter base id 0x1001D000
 
+  @ Copies each downsampled frame off the DOOM thread and delivers it to frameRepeater from its own thread. Priority
+  @ 10 is below rateGroupDoom (9): the row telemetry and hub packing downstream only get the time the engine leaves.
+  @ Queue 2: one kick per frame, dropped when full (latest wins in the slots).
+  instance frameHandoff: Components.FrameHandoff base id 0x1001F000 \
+    queue size 2 \
+    stack size Default.STACK_SIZE \
+    priority 10
+
   @ Per-phase CPU budget of the DOOM tick (EngineHooks.c), reported at 1 Hz
   instance engineProfiler: Components.EngineProfiler base id 0x1001E000
 

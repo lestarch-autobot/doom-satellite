@@ -55,6 +55,7 @@ module DoomFlight {
     instance hubComDriver
     instance hubByteStreamAdapter
     instance hubBufferManager
+    instance frameHandoff
     instance frameRepeater
     instance frameAdapter
     instance engineProfiler
@@ -128,12 +129,15 @@ module DoomFlight {
     }
 
     connections FramePipeline {
-      # Synchronous on the rateGroupDoom thread: engine -> downsampler -> repeater -> row and palette telemetry,
-      # plus a packed copy of each frame and palette to DoomCoprocessor over the hub
+      # On the rateGroupDoom thread: engine -> downsampler (in place) -> frameHandoff (copy). On frameHandoff's own,
+      # lower-priority thread: repeater -> row and palette telemetry, plus a packed copy of each frame and palette to
+      # DoomCoprocessor over the hub
       DoomSubtopology.doom.frameOut               -> DoomSubtopology.frameDownsampler.frameIn
       DoomSubtopology.doom.paletteOut             -> DoomSubtopology.frameDownsampler.paletteIn
-      DoomSubtopology.frameDownsampler.frameOut   -> frameRepeater.frameIn
-      DoomSubtopology.frameDownsampler.paletteOut -> frameRepeater.paletteIn
+      DoomSubtopology.frameDownsampler.frameOut   -> frameHandoff.frameIn
+      DoomSubtopology.frameDownsampler.paletteOut -> frameHandoff.paletteIn
+      frameHandoff.frameOut                       -> frameRepeater.frameIn
+      frameHandoff.paletteOut                     -> frameRepeater.paletteIn
       frameRepeater.frameOut[Ports_FrameRepeater.LOCAL]   -> DoomSubtopology.frameTlmProcessor.frameIn
       frameRepeater.paletteOut[Ports_FrameRepeater.LOCAL] -> DoomSubtopology.frameTlmProcessor.paletteIn
       frameRepeater.frameOut[Ports_FrameRepeater.HUB]     -> frameAdapter.frameIn

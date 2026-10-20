@@ -57,8 +57,10 @@ All slots start enabled. `setOutputEnabled(output, enabled)` sets a slot at topo
 setting)` command changes it from the ground (`OutputStateChanged` event; `OutputIndexInvalid` + `VALIDATION_ERROR` for
 an index outside the arrays). A disabled slot is skipped exactly like an unconnected one, so a consumer that may block
 the producer's thread can be kept out of the loop until an operator wants it. DoomFlight starts its `HUB` slot
-disabled: that slot drives the hub's synchronous UDP send from the DOOM rate group thread, and with the coprocessor
-unreachable on the link the send blocked the engine indefinitely on the bench.
+disabled: that slot drives the hub's synchronous UDP send, and with the coprocessor unreachable on the link the send
+blocked the producer's thread indefinitely on the bench (the DOOM rate group at the time; since `FrameHandoff` was
+inserted upstream the repeater runs on that component's lower-priority thread, so a blocked send would stall only the
+frame consumers, not the engine).
 
 ### 3.5 Telemetry
 
