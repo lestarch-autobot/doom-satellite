@@ -34,6 +34,8 @@ FrameStreamer::FrameStreamer(const char* const compName)
       m_port(0),
       m_divisor(1),
       m_enabled(false),
+      m_linkUp(nullptr),
+      m_framesLinkDown(0),
       m_captured(0),
       m_seq(0),
       m_framesSent(0),
@@ -57,7 +59,8 @@ FrameStreamer* FrameStreamer::instance() {
     return s_instance;
 }
 
-void FrameStreamer::configure(U8* slot0, U8* slot1, const char* address, U16 port, U8 divisor, bool enabled) {
+void FrameStreamer::configure(U8* slot0, U8* slot1, const char* address, U16 port, U8 divisor, bool enabled,
+                              LinkUpFn linkUp) {
     FW_ASSERT(slot0 != nullptr);
     FW_ASSERT(slot1 != nullptr);
     FW_ASSERT(address != nullptr);
@@ -69,6 +72,7 @@ void FrameStreamer::configure(U8* slot0, U8* slot1, const char* address, U16 por
     this->m_port = port;
     this->m_divisor = divisor;
     this->m_enabled = enabled;
+    this->m_linkUp = linkUp;
     this->m_peerChanged = true;
 }
 
@@ -133,7 +137,12 @@ void FrameStreamer::deliver_internalInterfaceHandler() {
     this->m_lock.unlock();
 
     if (slot != NO_SLOT) {
-        if (this->m_enabled && this->ensureSocket()) {
+        // No carrier: drop the frame (counted) instead of handing it to a transmit path that cannot complete
+        const bool linkUp = (this->m_linkUp == nullptr) || this->m_linkUp();
+        if (!linkUp) {
+            this->m_framesLinkDown++;
+            this->m_framesSkipped++;
+        } else if (this->m_enabled && this->ensureSocket()) {
             this->sendFrame(this->m_slots[slot]);
         }
         this->m_lock.lock();

@@ -33,7 +33,11 @@ class FrameStreamer final : public FrameStreamerComponentBase {
     ~FrameStreamer();
 
     //! Deployment-provided slot storage (each FRAME_BYTES), peer and boot state. Call before the tasks start.
-    void configure(U8* slot0, U8* slot1, const char* address, U16 port, U8 divisor, bool enabled);
+    //! Deployment hook answering whether the link carrier is up; nullptr = always send
+    using LinkUpFn = bool (*)();
+
+    void configure(U8* slot0, U8* slot1, const char* address, U16 port, U8 divisor, bool enabled,
+                   LinkUpFn linkUp = nullptr);
 
     //! Capture hook, called on the engine thread with the native frame and the engine palette (256 x BGRA bytes)
     void capture(const U8* pixels, const U8* bgra);
@@ -75,6 +79,8 @@ class FrameStreamer final : public FrameStreamerComponentBase {
     U16 m_port;
     U8 m_divisor;
     bool m_enabled;
+    LinkUpFn m_linkUp;
+    U32 m_framesLinkDown;
 
     U32 m_captured;
     U32 m_seq;

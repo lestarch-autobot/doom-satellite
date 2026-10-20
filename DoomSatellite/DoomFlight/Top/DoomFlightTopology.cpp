@@ -18,6 +18,13 @@
 
 extern "C" uint8_t* stream_slot(unsigned int index);  // ScreenBuffers.c: PSRAM slots for frameStreamer
 
+#include <zephyr/net/net_if.h>
+//! Carrier state of the default (Ethernet) interface, for frameStreamer's link check
+static bool ethernetCarrierUp() {
+    struct net_if* iface = net_if_get_default();
+    return (iface != nullptr) && net_if_is_up(iface) && net_if_is_carrier_ok(iface);
+}
+
 // Allows easy reference to objects in FPP/autocoder required namespaces
 using namespace DoomFlight;
 
@@ -136,7 +143,8 @@ void configureTopology(const TopologyState& state) {
 
     // The native-frame stream shares the coprocessor's address with the hub; its sends run on frameStreamer's own
     // thread (below the engine), so it can start enabled: an unreachable peer costs the engine only the frame copy.
-    frameStreamer.configure(stream_slot(0), stream_slot(1), state.hubRemoteAddress, STREAM_PORT, STREAM_DIVISOR, true);
+    frameStreamer.configure(stream_slot(0), stream_slot(1), state.hubRemoteAddress, STREAM_PORT, STREAM_DIVISOR, true,
+                            &ethernetCarrierUp);
 
     fileUplink.configure((state.fileUplinkDirectory != nullptr) ? state.fileUplinkDirectory : "/");
 
