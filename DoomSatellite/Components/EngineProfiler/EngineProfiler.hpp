@@ -29,6 +29,8 @@ class EngineProfiler final : public EngineProfilerComponentBase {
 
   private:
     static U32 s_resetCause;
+    U64 m_cpuPrev[6];      //!< previous-window cycle totals per bucket
+    U64 m_cpuPrevTotal;
 };
 
 }  // namespace Components

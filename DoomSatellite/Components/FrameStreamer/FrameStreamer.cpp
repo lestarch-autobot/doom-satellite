@@ -8,6 +8,7 @@
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
+#include <zephyr/kernel.h>
 
 #include "Fw/Types/Assert.hpp"
 #include "Os/RawTime.hpp"
@@ -46,6 +47,14 @@ FrameStreamer::FrameStreamer(const char* const compName)
       m_chunksSent(0),
       m_sendErrors(0),
       m_sendFailing(false),
+      m_sendSumUs(0),
+      m_sendCount(0),
+      m_sendMaxUs(0),
+      m_txSumUs(0),
+      m_txCount(0),
+      m_cpuPrevSelf(0),
+      m_cpuPrevTotal(0),
+      m_sendAgain(0),
       m_txTimeMaxUs(0),
       m_copyTimeMaxUs(0),
       m_lastTlmSeconds(0) {
@@ -225,10 +234,25 @@ bool FrameStreamer::sendChunk(U32 seq, U8 kind, U32 offset, const U8* data, U32 
     FW_ASSERT(index == CHUNK_HEADER_BYTES, static_cast<FwAssertArgType>(index));
     (void)::memcpy(&this->m_datagram[CHUNK_HEADER_BYTES], data, length);
 
+    Os::RawTime sendStart;
+    (void)sendStart.now();
     const Drv::SocketIpStatus status =
         this->m_socket.send(this->m_descriptor, this->m_datagram, CHUNK_HEADER_BYTES + length);
+    Os::RawTime sendEnd;
+    (void)sendEnd.now();
+    U32 sendUs = 0;
+    if (sendEnd.getDiffUsec(sendStart, sendUs) == Os::RawTime::OP_OK) {
+        this->m_sendSumUs += sendUs;
+        this->m_sendCount++;
+        if (sendUs > this->m_sendMaxUs) {
+            this->m_sendMaxUs = sendUs;
+        }
+    }
     if (status != Drv::SOCK_SUCCESS) {
         this->m_sendErrors++;
+        if (status == Drv::SOCK_INTERRUPTED_TRY_AGAIN) {
+            this->m_sendAgain++;
+        }
         if (!this->m_sendFailing) {
             // Only the first failure of a run is reported; the counter carries the rest (46 chunks per frame)
             this->m_sendFailing = true;
@@ -266,6 +290,8 @@ void FrameStreamer::sendFrame(const Slot& slot) {
     if ((end.getDiffUsec(start, elapsedUs) == Os::RawTime::OP_OK) && (elapsedUs > this->m_txTimeMaxUs)) {
         this->m_txTimeMaxUs = elapsedUs;
     }
+    this->m_txSumUs += elapsedUs;
+    this->m_txCount++;
 }
 
 void FrameStreamer::writeTelemetry() {
@@ -279,6 +305,25 @@ void FrameStreamer::writeTelemetry() {
     this->tlmWrite_ChunksSent(this->m_chunksSent, now);
     this->tlmWrite_SendErrors(this->m_sendErrors, now);
     this->tlmWrite_FramesLinkDown(this->m_framesLinkDown, now);
+    this->tlmWrite_SockFlags(this->m_socketOpen ? static_cast<I32>(::fcntl(this->m_descriptor.fd, F_GETFL, 0)) : -1, now);
+    this->tlmWrite_SendAgain(this->m_sendAgain, now);
+    this->tlmWrite_SendAvgUs((this->m_sendCount > 0) ? static_cast<U32>(this->m_sendSumUs / this->m_sendCount) : 0, now);
+    this->tlmWrite_SendMaxUs(this->m_sendMaxUs, now);
+    this->tlmWrite_TxAvgUs((this->m_txCount > 0) ? static_cast<U32>(this->m_txSumUs / this->m_txCount) : 0, now);
+    this->m_sendSumUs = 0;
+    this->m_sendCount = 0;
+    this->m_sendMaxUs = 0;
+    this->m_txSumUs = 0;
+    this->m_txCount = 0;
+    k_thread_runtime_stats_t self;
+    k_thread_runtime_stats_t all;
+    if ((k_thread_runtime_stats_get(k_current_get(), &self) == 0) && (k_thread_runtime_stats_all_get(&all) == 0)) {
+        const U64 totalDelta = all.total_cycles - this->m_cpuPrevTotal;
+        const U64 selfDelta = self.execution_cycles - this->m_cpuPrevSelf;
+        this->m_cpuPrevTotal = all.total_cycles;
+        this->m_cpuPrevSelf = self.execution_cycles;
+        this->tlmWrite_CpuPct((totalDelta > 0) ? static_cast<U8>((selfDelta * 100U) / totalDelta) : 0, now);
+    }
     this->tlmWrite_TxTimeMaxUs(this->m_txTimeMaxUs, now);
     this->tlmWrite_CopyTimeMaxUs(this->m_copyTimeMaxUs, now);
 }

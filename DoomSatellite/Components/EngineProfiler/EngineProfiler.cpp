@@ -5,9 +5,11 @@
 
 #include "DoomSatellite/Components/EngineProfiler/EngineProfiler.hpp"
 
+#include <zephyr/kernel.h>
+
 namespace Components {
 
-EngineProfiler::EngineProfiler(const char* const compName) : EngineProfilerComponentBase(compName) {}
+EngineProfiler::EngineProfiler(const char* const compName) : EngineProfilerComponentBase(compName), m_cpuPrev{}, m_cpuPrevTotal(0) {}
 
 EngineProfiler::~EngineProfiler() {}
 
@@ -17,6 +19,7 @@ U32 EngineProfiler::toUs(U64 cycles, U32 cyclesPerSecond) {
 }
 
 U32 EngineProfiler::s_resetCause = 0;
+
 
 void EngineProfiler::setResetCause(U32 cause) {
     s_resetCause = cause;
@@ -29,6 +32,14 @@ void EngineProfiler::schedIn_handler(FwIndexType portNum, U32 context) {
 
     this->tlmWrite_Ticks(stats.tick.count);
     this->tlmWrite_ResetCause(s_resetCause);
+    k_thread_runtime_stats_t all;
+    if (k_thread_runtime_stats_all_get(&all) == 0) {
+        const U64 totalDelta = all.total_cycles - this->m_cpuPrevTotal;
+        const U64 idleDelta = all.idle_cycles - this->m_cpuPrev[0];
+        this->m_cpuPrevTotal = all.total_cycles;
+        this->m_cpuPrev[0] = all.idle_cycles;
+        this->tlmWrite_CpuIdlePct((totalDelta > 0) ? static_cast<U8>((idleDelta * 100U) / totalDelta) : 0);
+    }
 
     const struct engine_hooks_phase* const phases[] = {&stats.tick, &stats.render, &stats.blit, &stats.emit};
     U32 maxUs[FW_NUM_ARRAY_ELEMENTS(phases)];

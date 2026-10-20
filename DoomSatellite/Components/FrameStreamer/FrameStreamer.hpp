@@ -88,7 +88,15 @@ class FrameStreamer final : public FrameStreamerComponentBase {
     U32 m_framesSkipped;
     U32 m_chunksSent;
     U32 m_sendErrors;
-    bool m_sendFailing;  //!< a send failed since the last successful chunk (event rate limit)
+    bool m_sendFailing;
+    U64 m_sendSumUs;   //!< window accumulators for SendAvgUs/SendMaxUs/TxAvgUs
+    U32 m_sendCount;
+    U32 m_sendMaxUs;
+    U64 m_txSumUs;
+    U32 m_txCount;
+    U64 m_cpuPrevSelf;  //!< streamer thread execution cycles at the last report
+    U64 m_cpuPrevTotal;
+    U32 m_sendAgain;  //!< a send failed since the last successful chunk (event rate limit)
     U32 m_txTimeMaxUs;
     U32 m_copyTimeMaxUs;
     U32 m_lastTlmSeconds;

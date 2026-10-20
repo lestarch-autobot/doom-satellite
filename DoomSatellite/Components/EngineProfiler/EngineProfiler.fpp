@@ -16,6 +16,19 @@ module Components {
     @ Reset cause register (hwinfo) of this boot, as reported by Main
     telemetry ResetCause: U32
 
+    @ CPU share over the last window of the idle thread, percent (CONFIG_THREAD_RUNTIME_STATS)
+    telemetry CpuIdlePct: U8
+
+
+
+
+
+
+
+
+
+
+
     @ Longest doomgeneric_Tick in the window, microseconds
     telemetry TickMaxUs: U32
     @ Mean doomgeneric_Tick in the window, microseconds

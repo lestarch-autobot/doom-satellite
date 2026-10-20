@@ -70,6 +70,18 @@ module Components {
 
     @ Longest time to send one frame, all chunks, on the streamer thread
     telemetry TxTimeMaxUs: U32
+    @ Mean duration of one chunk sendto() over the last report window, microseconds
+    telemetry SendAvgUs: U32
+    @ Longest single chunk sendto() over the last report window, microseconds
+    telemetry SendMaxUs: U32
+    @ Mean time from frame pickup to last chunk queued over the last report window, microseconds
+    telemetry TxAvgUs: U32
+    @ CPU share of the streamer thread itself over the last report window, percent
+    telemetry CpuPct: U8
+    @ fcntl(F_GETFL) of the stream socket (bit for O_NONBLOCK expected), -1 if closed
+    telemetry SockFlags: I32
+    @ Chunk sends that returned EAGAIN/EWOULDBLOCK (TX pool full), cumulative
+    telemetry SendAgain: U32
 
     @ Longest frame copy on the engine thread (capture hook)
     telemetry CopyTimeMaxUs: U32

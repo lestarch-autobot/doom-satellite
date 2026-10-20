@@ -118,7 +118,7 @@ module DoomFlight {
   instance frameStreamer: Components.FrameStreamer base id 0x10020000 \
     queue size 2 \
     stack size Default.STACK_SIZE \
-    priority 11
+    priority 8
 
   @ Per-phase CPU budget of the DOOM tick (EngineHooks.c), reported at 1 Hz
   instance engineProfiler: Components.EngineProfiler base id 0x1001E000
