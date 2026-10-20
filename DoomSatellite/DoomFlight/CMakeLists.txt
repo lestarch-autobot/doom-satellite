@@ -37,6 +37,10 @@ if (FPRIME_PLATFORM STREQUAL "Zephyr")
         foreach(hot r_draw.c r_main.c r_segs.c r_plane.c r_things.c r_bsp.c r_data.c r_sky.c m_fixed.c v_video.c i_video.c)
             zephyr_code_relocate(FILES "${DOOMGENERIC_SRC}/${hot}" LOCATION ITCM_TEXT)
         endforeach()
+# fprime-stress asks for -O2 on the engine, but Zephyr appends its CONFIG_SIZE_OPTIMIZATIONS -Os after the target
+# options and the last -O wins. Per-source options come after both, so the engine really builds at -O2 here.
+get_target_property(DOOMGENERIC_SOURCES fprime_stress_doomgeneric SOURCES)
+set_source_files_properties(${DOOMGENERIC_SOURCES} TARGET_DIRECTORY fprime_stress_doomgeneric PROPERTIES COMPILE_OPTIONS "-O2")
         zephyr_linker_sources(SECTIONS "${CMAKE_CURRENT_LIST_DIR}/psram_sections.ld")
         zephyr_include_directories("${ZEPHYR_BASE}/drivers/memc")
     endif()
