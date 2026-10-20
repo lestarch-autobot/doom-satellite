@@ -8,6 +8,12 @@
 // Include autocoded FPP constants
 #include "DoomSatellite/DoomCoprocessor/Top/FppConstantsAc.hpp"
 
+// keyBridge.key*Out -> hub.serialIn[n]: fpp 3.4 emits the typed-to-serial glue with the unqualified
+// `KeyEventPortSerializer` (the port lives in module Doom, the topology in DoomCoprocessor), so make it visible here.
+#include "Doom/KeyEventPortAc.hpp"
+using Doom::KeyEventPortBuffer;
+using Doom::KeyEventPortSerializer;
+
 // DoomSubtopology configuration phases call memset
 
 /**

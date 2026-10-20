@@ -158,6 +158,16 @@ SYS_INIT(psram_heap_init, POST_KERNEL, 1);
 
 /* Console report for main(): the POST_KERNEL init runs before the USB console enumerates */
 void psram_heap_report(void) {
+    /* Largest block the OCRAM arena still hands out (probe by halving): the margin left for late small allocations */
+    size_t probe = 256U * 1024U;
+    void* block = NULL;
+    while ((probe >= 256U) && ((block = __real_malloc(probe)) == NULL)) {
+        probe /= 2U;
+    }
+    if (block != NULL) {
+        __real_free(block);
+    }
+    printk("OcramHeap: largest free block >= %u B\n", (block != NULL) ? (unsigned)probe : 0U);
     printk("PsramHeap: arena %p..%p (%u B), boot read-back %u/%u words failed (first 0x%08x=0x%08x), ready=%d\n",
            (void*)psram_arena, (void*)(psram_arena + PSRAM_HEAP_SIZE), (unsigned)PSRAM_HEAP_SIZE,
            (unsigned)psram_test_errors, (unsigned)psram_test_words, (unsigned)psram_first_bad_addr,

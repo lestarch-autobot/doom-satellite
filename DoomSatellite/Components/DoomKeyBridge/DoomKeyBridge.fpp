@@ -1,8 +1,11 @@
 module Components {
 
-  @ Python (fprime-python) bridge from the viewer's keyboard to the engine's key ports. Listens for key datagrams
-  @ from doom-satellite-view on a UDP port and invokes keyDownOut / keyUpOut, which DoomCoprocessor wires into the
-  @ GenericHub so they arrive at DoomFlight's doom.keyDownIn / keyUpIn.
+  @ fprime-python
+  @
+  @ Python bridge from the viewer's keyboard to the engine's key ports (the "fprime-python" annotation line above
+  @ marks the component as Python-implemented, DoomKeyBridge.py). Listens for key datagrams from doom-satellite-view
+  @ on a UDP port and invokes keyDownOut / keyUpOut, which DoomCoprocessor wires into the GenericHub so they arrive at
+  @ DoomFlight's doom.keyDownIn / keyUpIn.
   passive component DoomKeyBridge {
 
     @ Key pressed

@@ -69,6 +69,7 @@ enum TopologyConstants {
     HUB_LARGE_BUFFER_SIZE = 4096,  // UDP receive buffers and packed frames (4,009 bytes, 4,025 with the hub header)
     HUB_LARGE_BUFFER_COUNT = 12,
     STREAM_PORT = 50601,  // raw UDP native-frame stream to the coprocessor (Components::FrameStreamer)
+    STREAM_DIVISOR = 2,   // boot at 15 fps; frameStreamer SET_RATE 1 streams every engine frame
     HUB_RECV_PRIORITY = 5,
     HUB_RECONNECT_PRIORITY = 6,
 };
@@ -135,7 +136,7 @@ void configureTopology(const TopologyState& state) {
 
     // The native-frame stream shares the coprocessor's address with the hub; its sends run on frameStreamer's own
     // thread (below the engine), so it can start enabled: an unreachable peer costs the engine only the frame copy.
-    frameStreamer.configure(stream_slot(0), stream_slot(1), state.hubRemoteAddress, STREAM_PORT, 1, true);
+    frameStreamer.configure(stream_slot(0), stream_slot(1), state.hubRemoteAddress, STREAM_PORT, STREAM_DIVISOR, true);
 
     fileUplink.configure((state.fileUplinkDirectory != nullptr) ? state.fileUplinkDirectory : "/");
 

@@ -15,6 +15,7 @@
 // hub.serialOut[n] -> DoomSubtopology.doom.key*In: fpp 3.4 emits the serial-to-typed glue with the unqualified
 // `KeyEventPortSerializer` (the port lives in module Doom, the topology in DoomFlight), so make it visible here.
 #include "Doom/KeyEventPortAc.hpp"
+using Doom::KeyEventPortBuffer;
 using Doom::KeyEventPortSerializer;
 
 // SubtopologyTopologyDefs includes

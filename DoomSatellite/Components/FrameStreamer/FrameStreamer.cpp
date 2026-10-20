@@ -9,6 +9,7 @@
 
 #include "Fw/Types/Assert.hpp"
 #include "Os/RawTime.hpp"
+#include "Os/Task.hpp"
 
 namespace Components {
 
@@ -17,6 +18,7 @@ static constexpr U8 KIND_PALETTE = 1;
 static constexpr U8 FLAG_LAST = 0x01;
 static constexpr U32 CHUNK_MAGIC = 0x44534631;  // "DSF1"
 static constexpr U32 SEND_TIMEOUT_US = 100000;  // one chunk waits at most this long for TX buffers
+static constexpr U32 SEND_BACKOFF_US = 250000;  // pause after a failed frame
 
 FrameStreamer* FrameStreamer::s_instance = nullptr;
 
@@ -229,6 +231,10 @@ void FrameStreamer::sendFrame(const Slot& slot) {
     }
     if (ok) {
         this->m_framesSent++;
+    } else {
+        // A failing link must not turn into a tight send/fail loop: hold this thread off for a while. Frames captured
+        // meanwhile are simply replaced in the slots (FramesSkipped).
+        Os::Task::delay(Fw::TimeInterval(0, SEND_BACKOFF_US));
     }
     Os::RawTime end;
     (void)end.now();
