@@ -57,6 +57,7 @@ module DoomFlight {
     instance hubBufferManager
     instance frameRepeater
     instance frameAdapter
+    instance engineProfiler
 
   # ----------------------------------------------------------------------
   # Pattern graph specifiers
@@ -174,6 +175,7 @@ module DoomFlight {
       rateGroup1Hz.RateGroupMemberOut[0] -> ComCcsds.comQueue.run
       rateGroup1Hz.RateGroupMemberOut[1] -> CdhCore.$health.Run
       rateGroup1Hz.RateGroupMemberOut[2] -> ComCcsds.commsBufferManager.schedIn
+      rateGroup1Hz.RateGroupMemberOut[3] -> engineProfiler.schedIn
       rateGroup1Hz.RateGroupMemberOut[4] -> ComCcsds.aggregator.timeout
       rateGroup1Hz.RateGroupMemberOut[5] -> CdhCore.Subtopology.eventsRun
       rateGroup1Hz.RateGroupMemberOut[6] -> hubBufferManager.schedIn

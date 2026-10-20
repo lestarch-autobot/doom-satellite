@@ -105,4 +105,7 @@ module DoomFlight {
   @ Packs the repeated frames and palettes into hub buffers for DoomCoprocessor
   instance frameAdapter: Components.FrameBufferAdapter base id 0x1001D000
 
+  @ Per-phase CPU budget of the DOOM tick (EngineHooks.c), reported at 1 Hz
+  instance engineProfiler: Components.EngineProfiler base id 0x1001E000
+
 }

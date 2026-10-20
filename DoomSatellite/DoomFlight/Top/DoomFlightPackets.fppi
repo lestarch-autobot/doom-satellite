@@ -70,6 +70,19 @@ telemetry packets DoomFlightPackets {
     DoomSubtopology.doom.InputDataRateBps
   }
 
+  @ Per-phase CPU budget of the DOOM tick (Components.EngineProfiler), 1 Hz
+  packet EngineBudget id 0x102 group 1 {
+    engineProfiler.Ticks
+    engineProfiler.TickMaxUs
+    engineProfiler.TickAvgUs
+    engineProfiler.RenderMaxUs
+    engineProfiler.RenderAvgUs
+    engineProfiler.BlitMaxUs
+    engineProfiler.BlitAvgUs
+    engineProfiler.EmitMaxUs
+    engineProfiler.EmitAvgUs
+  }
+
   packet DoomPalette id 0x101 group 1 {
     DoomSubtopology.frameTlmProcessor.PaletteOut
   }

@@ -1,0 +1,9 @@
+register_fprime_library(
+    AUTOCODER_INPUTS
+        "${CMAKE_CURRENT_LIST_DIR}/EngineProfiler.fpp"
+    SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/EngineProfiler.cpp"
+    HEADERS
+        "${CMAKE_CURRENT_LIST_DIR}/EngineProfiler.hpp"
+        "${CMAKE_CURRENT_LIST_DIR}/EngineHooks.h"
+)
