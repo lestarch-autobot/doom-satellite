@@ -25,6 +25,11 @@
 
 static uint8_t __dtcm_bss_section __aligned(32) video_buffer[SCREEN_BYTES];   // I_VideoBuffer
 static uint8_t __dtcm_bss_section __aligned(32) screen_buffer[SCREEN_BYTES];  // DG_ScreenBuffer
+/* Latest-wins slots Components::FrameStreamer copies the native frame into on the engine thread (PSRAM: OCRAM has
+ * no room for two more frames; the ~1 ms copy is paid by the engine, the send by the streamer thread). */
+#define STREAM_SLOTS 2U
+static uint8_t Z_GENERIC_SECTION(PSRAM) __aligned(32) stream_slots[STREAM_SLOTS][SCREEN_BYTES];
+
 static int video_buffer_claimed;
 static int screen_buffer_claimed;
 
@@ -68,4 +73,8 @@ void screen_buffers_report(void) {
     printk("ScreenBuffers: I_VideoBuffer=%p (DTCM %p, %s) DG_ScreenBuffer=%p (DTCM %p, %s)\n", (void*)I_VideoBuffer,
            (void*)video_buffer, (I_VideoBuffer == video_buffer) ? "ok" : "MISSED", (void*)DG_ScreenBuffer,
            (void*)screen_buffer, (DG_ScreenBuffer == screen_buffer) ? "ok" : "MISSED");
+}
+
+uint8_t* stream_slot(unsigned int index) {
+    return (index < STREAM_SLOTS) ? stream_slots[index] : NULL;
 }

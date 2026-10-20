@@ -29,6 +29,7 @@ module DoomCoprocessor {
     instance linuxTimer
     instance frameAdapter
     instance frameReader
+    instance keyBridge
 
   # ----------------------------------------------------------------------
   # Pattern graph specifiers
@@ -73,6 +74,10 @@ module DoomCoprocessor {
       frameAdapter.packedInReturn   -> hub.bufferOutReturn[HUB_FRAME_PORT]
       frameAdapter.frameOut         -> frameReader.frameIn
       frameAdapter.paletteOut       -> frameReader.paletteIn
+
+      # Viewer keys to DoomFlight: serial ports cross the hub by index (DoomFlight: hub.serialOut[0..1] -> doom.key*In)
+      keyBridge.keyDownOut -> hub.serialIn[0]
+      keyBridge.keyUpOut   -> hub.serialIn[1]
     }
 
     connections Hub {

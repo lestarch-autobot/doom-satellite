@@ -45,9 +45,25 @@ void __wrap_I_FinishUpdate(void) {
     __real_I_FinishUpdate();
 }
 
+/* Native frame hand-off for Components::FrameStreamer (weak: absent when the deployment has no streamer). At this
+ * point DG_ScreenBuffer holds the complete 320x200 indices and colors[] the engine palette; the downsampler that runs
+ * inside the real DG_DrawFrame packs the screen buffer in place, so the copy has to happen first. */
+struct engine_color {
+    uint32_t b : 8;
+    uint32_t g : 8;
+    uint32_t r : 8;
+    uint32_t a : 8;
+};
+extern uint8_t* DG_ScreenBuffer;
+extern struct engine_color colors[256];
+void frame_streamer_capture(const uint8_t* pixels, const uint8_t* bgra) __attribute__((weak));
+
 void __wrap_DG_DrawFrame(void) {
     const uint32_t draw_start = k_cycle_get_32();
     record(&stats.blit, draw_start - finish_start);
+    if (frame_streamer_capture != NULL) {
+        frame_streamer_capture(DG_ScreenBuffer, (const uint8_t*)colors);
+    }
     __real_DG_DrawFrame();
     record(&stats.emit, k_cycle_get_32() - draw_start);
 }

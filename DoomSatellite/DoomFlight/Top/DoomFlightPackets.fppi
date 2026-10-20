@@ -85,6 +85,12 @@ telemetry packets DoomFlightPackets {
     frameHandoff.FramesOut
     frameHandoff.FramesOverwritten
     frameHandoff.DeliverMaxUs
+    frameStreamer.FramesSent
+    frameStreamer.FramesSkipped
+    frameStreamer.ChunksSent
+    frameStreamer.SendErrors
+    frameStreamer.TxTimeMaxUs
+    frameStreamer.CopyTimeMaxUs
   }
 
   packet DoomPalette id 0x101 group 1 {

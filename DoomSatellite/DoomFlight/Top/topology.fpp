@@ -56,6 +56,7 @@ module DoomFlight {
     instance hubByteStreamAdapter
     instance hubBufferManager
     instance frameHandoff
+    instance frameStreamer
     instance frameRepeater
     instance frameAdapter
     instance engineProfiler
@@ -121,6 +122,12 @@ module DoomFlight {
 
       # Remote events join the local downlink
       hub.eventOut -> CdhCore.events.LogRecv
+    }
+
+    connections HubKeys {
+      # Key events from the coprocessor (viewer keyboard -> DoomKeyBridge -> hub) into the engine's input queue
+      hub.serialOut[0] -> DoomSubtopology.doom.keyDownIn
+      hub.serialOut[1] -> DoomSubtopology.doom.keyUpIn
     }
 
     connections HubTelemetry {

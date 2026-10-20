@@ -1,0 +1,12 @@
+register_fprime_library(
+    AUTOCODER_INPUTS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameStreamer.fpp"
+    SOURCES
+        "${CMAKE_CURRENT_LIST_DIR}/FrameStreamer.cpp"
+    HEADERS
+        "${CMAKE_CURRENT_LIST_DIR}/FrameStreamer.hpp"
+    DEPENDS
+        Doom_DoomConfig
+        Drv_Ip
+        Os
+)

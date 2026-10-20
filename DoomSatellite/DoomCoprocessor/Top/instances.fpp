@@ -62,4 +62,7 @@ module DoomCoprocessor {
   @ Python (fprime-python) reader of the unpacked frames
   instance frameReader: Components.DoomFrameReader base id 0x2000C000
 
+  @ Python (fprime-python) bridge from the viewer's keyboard to the engine's key ports over the hub
+  instance keyBridge: Components.DoomKeyBridge base id 0x2000D000
+
 }

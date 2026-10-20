@@ -16,6 +16,8 @@
 
 #include <cstring>
 
+extern "C" uint8_t* stream_slot(unsigned int index);  // ScreenBuffers.c: PSRAM slots for frameStreamer
+
 // Allows easy reference to objects in FPP/autocoder required namespaces
 using namespace DoomFlight;
 
@@ -66,6 +68,7 @@ enum TopologyConstants {
     HUB_SMALL_BUFFER_COUNT = 8,
     HUB_LARGE_BUFFER_SIZE = 4096,  // UDP receive buffers and packed frames (4,009 bytes, 4,025 with the hub header)
     HUB_LARGE_BUFFER_COUNT = 12,
+    STREAM_PORT = 50601,  // raw UDP native-frame stream to the coprocessor (Components::FrameStreamer)
     HUB_RECV_PRIORITY = 5,
     HUB_RECONNECT_PRIORITY = 6,
 };
@@ -130,6 +133,10 @@ void configureTopology(const TopologyState& state) {
     // ground with frameRepeater SET_OUTPUT(HUB, ENABLED) once the coprocessor answers on the link.
     frameRepeater.setOutputEnabled(static_cast<FwIndexType>(DoomFlight::Ports_FrameRepeater::HUB), false);
 
+    // The native-frame stream shares the coprocessor's address with the hub; its sends run on frameStreamer's own
+    // thread (below the engine), so it can start enabled: an unreachable peer costs the engine only the frame copy.
+    frameStreamer.configure(stream_slot(0), stream_slot(1), state.hubRemoteAddress, STREAM_PORT, 1, true);
+
     fileUplink.configure((state.fileUplinkDirectory != nullptr) ? state.fileUplinkDirectory : "/");
 
     // All engine heap allocation (PSRAM, see PsramHeap.c) happens here, before any task runs. An unreadable WAD
@@ -146,6 +153,7 @@ void configureTopology(const TopologyState& state) {
 }
 
 // Public functions for use in main program are namespaced with deployment name DoomFlight
+
 namespace DoomFlight {
 void setupTopology(const TopologyState& state) {
     // Autocoded initialization. Function provided by autocoder.

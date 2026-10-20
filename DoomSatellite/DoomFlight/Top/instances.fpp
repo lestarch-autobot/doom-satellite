@@ -113,6 +113,13 @@ module DoomFlight {
     stack size Default.STACK_SIZE \
     priority 10
 
+  @ Streams the native 320x200 frame to the coprocessor over raw UDP from its own thread. Priority 11: below the
+  @ engine and below frameHandoff's row telemetry; a frame still in flight is simply replaced (latest wins).
+  instance frameStreamer: Components.FrameStreamer base id 0x10020000 \
+    queue size 2 \
+    stack size Default.STACK_SIZE \
+    priority 11
+
   @ Per-phase CPU budget of the DOOM tick (EngineHooks.c), reported at 1 Hz
   instance engineProfiler: Components.EngineProfiler base id 0x1001E000
 

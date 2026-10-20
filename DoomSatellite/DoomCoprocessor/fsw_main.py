@@ -5,7 +5,7 @@ fprime-python. This script replaces the former C++ main: it parses the same opti
 until SIGINT/SIGTERM, and tears it down.
 
 Usage (from the install tree, which holds fprime_py and the Python components):
-    python3 build-artifacts/<platform>/DoomCoprocessor/python/fsw_main.py [-a address] [-p port] [-u port] [-f host:port]
+    python3 build-artifacts/<platform>/DoomCoprocessor/python/fsw_main.py [-a address] [-p port] [-u port] [-f host:port] [-s host:port] [-k host:port]
 
 Supplies the fsw_main() entry point required by fprime-python-runner.
 """
@@ -31,6 +31,12 @@ def parse_args():
     parser.add_argument("-f", "--frame-sink", default=os.environ.get("DOOM_FRAME_SINK"),
                         help="host:port UDP sink the Python frameReader forwards frames and palettes to, for the "
                              "doom-satellite-view viewer (default $DOOM_FRAME_SINK, none when unset)")
+    parser.add_argument("-s", "--stream-bind", default=os.environ.get("DOOM_STREAM_BIND"),
+                        help="host:port the Python frameReader receives the native FrameStreamer chunks on "
+                             "(default $DOOM_STREAM_BIND, else 0.0.0.0:50601; 'none' disables)")
+    parser.add_argument("-k", "--key-bind", default=os.environ.get("DOOM_KEY_BIND"),
+                        help="host:port the Python keyBridge receives doom-satellite-view key datagrams on "
+                             "(default $DOOM_KEY_BIND, else 127.0.0.1:50602)")
     return parser.parse_args()
 
 
@@ -45,6 +51,10 @@ def fsw_main():
     # The Python frameReader instance is constructed inside setup_topology and reads its sink from the environment
     if args.frame_sink:
         os.environ["DOOM_FRAME_SINK"] = args.frame_sink
+    if args.stream_bind:
+        os.environ["DOOM_STREAM_BIND"] = args.stream_bind
+    if args.key_bind:
+        os.environ["DOOM_KEY_BIND"] = args.key_bind
 
     print("Hit Ctrl-C to quit", flush=True)
     fprime_py.setup_topology(state)
