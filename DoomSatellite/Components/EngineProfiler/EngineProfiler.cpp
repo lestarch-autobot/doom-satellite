@@ -102,6 +102,36 @@ void EngineProfiler::schedIn_handler(FwIndexType portNum, U32 context) {
     this->tlmWrite_SlipThr21Us(thr[21]);
     this->tlmWrite_SlipThr22Us(thr[22]);
     this->tlmWrite_SlipThr23Us(thr[23]);
+    this->tlmWrite_SkipCount(stats.skip_count);
+    this->tlmWrite_SkipAgeAvgUs((stats.skip_count > 0) ? toUs(stats.skip_age_cycles / stats.skip_count, hz) : 0U);
+    U32 skp[ENGINE_HOOKS_MAX_THREADS];
+    for (U32 i = 0; i < ENGINE_HOOKS_MAX_THREADS; i++) {
+        skp[i] = (stats.skip_count > 0) ? toUs(stats.skip_thread_cycles[i] / stats.skip_count, hz) : 0U;
+    }
+    this->tlmWrite_SkipThr00Us(skp[0]);
+    this->tlmWrite_SkipThr01Us(skp[1]);
+    this->tlmWrite_SkipThr02Us(skp[2]);
+    this->tlmWrite_SkipThr03Us(skp[3]);
+    this->tlmWrite_SkipThr04Us(skp[4]);
+    this->tlmWrite_SkipThr05Us(skp[5]);
+    this->tlmWrite_SkipThr06Us(skp[6]);
+    this->tlmWrite_SkipThr07Us(skp[7]);
+    this->tlmWrite_SkipThr08Us(skp[8]);
+    this->tlmWrite_SkipThr09Us(skp[9]);
+    this->tlmWrite_SkipThr10Us(skp[10]);
+    this->tlmWrite_SkipThr11Us(skp[11]);
+    this->tlmWrite_SkipThr12Us(skp[12]);
+    this->tlmWrite_SkipThr13Us(skp[13]);
+    this->tlmWrite_SkipThr14Us(skp[14]);
+    this->tlmWrite_SkipThr15Us(skp[15]);
+    this->tlmWrite_SkipThr16Us(skp[16]);
+    this->tlmWrite_SkipThr17Us(skp[17]);
+    this->tlmWrite_SkipThr18Us(skp[18]);
+    this->tlmWrite_SkipThr19Us(skp[19]);
+    this->tlmWrite_SkipThr20Us(skp[20]);
+    this->tlmWrite_SkipThr21Us(skp[21]);
+    this->tlmWrite_SkipThr22Us(skp[22]);
+    this->tlmWrite_SkipThr23Us(skp[23]);
 }
 
 }  // namespace Components

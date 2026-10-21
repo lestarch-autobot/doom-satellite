@@ -31,6 +31,8 @@ static uint64_t cycle_self_start;
 static uint32_t prev_tick_end;
 static uint16_t phase_bins[DOOM_PERIOD_MS];
 static int prev_late;
+static int tick_catchup;
+static uint32_t tick_seq;
 static int have_prev_end;
 
 static void collect_thread(const struct k_thread* thread, void* user) {
@@ -62,6 +64,33 @@ int engine_hooks_thread_info(uint32_t i, const char** name, int* prio) {
     *name = thread_names[i];
     *prio = thread_prios[i];
     return 1;
+}
+
+uint32_t engine_hooks_tick_seq(void) {
+    return tick_seq;
+}
+
+int engine_hooks_tick_is_catchup(void) {
+    return in_tick && tick_catchup;
+}
+
+void engine_hooks_sample_threads(uint64_t out[ENGINE_HOOKS_MAX_THREADS]) {
+    for (uint32_t i = 0; i < thread_count; i++) {
+        k_thread_runtime_stats_t rt;
+        out[i] = (k_thread_runtime_stats_get(thread_tids[i], &rt) == 0) ? rt.execution_cycles : 0;
+    }
+}
+
+void engine_hooks_account_skip(const uint64_t start[ENGINE_HOOKS_MAX_THREADS], uint32_t age_cycles) {
+    uint64_t now[ENGINE_HOOKS_MAX_THREADS];
+    engine_hooks_sample_threads(now);
+    unsigned int key = irq_lock();
+    stats.skip_count++;
+    stats.skip_age_cycles += age_cycles;
+    for (uint32_t i = 0; i < thread_count; i++) {
+        stats.skip_thread_cycles[i] += now[i] - start[i];
+    }
+    irq_unlock(key);
 }
 
 static uint64_t thread_cycles(k_tid_t tid) {
@@ -118,6 +147,13 @@ void __wrap_doomgeneric_Tick(void) {
     self_start = thread_cycles(k_current_get());
     tick_start = k_cycle_get_32();
     const uint32_t start_ph = (uint32_t)(k_uptime_get() % (int64_t)DOOM_PERIOD_MS);
+    /* A catch-up tick is one whose post was already queued: the previous tick outran its period, or this one
+     * started without waiting for a post (a normal wait leaves >= 20 ms between ticks; replays and the bursts of
+     * higher-priority work between them leave far less). The phase estimate cannot tell how many periods late a
+     * replayed cycle is, so the gap test carries the chain through the replay. */
+    tick_catchup = have_prev_end &&
+                   (prev_late || ((tick_start - prev_tick_end) < (15U * (sys_clock_hw_cycles_per_sec() / 1000U))));
+    tick_seq++;
     in_tick = 1;
     render_recorded = 0;
     __real_doomgeneric_Tick();
@@ -143,8 +179,7 @@ void __wrap_doomgeneric_Tick(void) {
     const uint32_t latency_ms = (start_ph + DOOM_PERIOD_MS - mode) % DOOM_PERIOD_MS;
     const uint32_t cycles_per_ms = sys_clock_hw_cycles_per_sec() / 1000U;
     const uint32_t lateness = latency_ms * cycles_per_ms + (tick_end - tick_start);
-    /* After a late tick the next post is already queued, so the following tick is a replay (catch-up) */
-    const int catchup = have_prev_end && prev_late;
+    const int catchup = tick_catchup;
     prev_late = attribute_tick(tick_end - tick_start, have_prev_end ? lateness : 0U, catchup);
     for (uint32_t i = 0; i < thread_count; i++) {
         thread_start[i] = thread_cycles(thread_tids[i]);

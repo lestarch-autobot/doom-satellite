@@ -85,6 +85,14 @@ module Components {
 
     @ Longest frame copy on the engine thread (capture hook)
     telemetry CopyTimeMaxUs: U32
+    @ Deliver kicks not queued because the streamer's queue was full (the frame waits for the next kick)
+    telemetry KicksDropped: U32
+    @ Captures not published because the engine was replaying missed cycles back-to-back after a stall (younger than half a period)
+    telemetry ReplaySuppressed: U32
+    @ Mean publish-to-pickup latency of the frames delivered in the last second, microseconds
+    telemetry PickupAvgUs: U32
+    @ Longest publish-to-pickup latency since boot, microseconds
+    telemetry PickupMaxUs: U32
 
     command recv port cmdIn
     command reg port cmdRegOut

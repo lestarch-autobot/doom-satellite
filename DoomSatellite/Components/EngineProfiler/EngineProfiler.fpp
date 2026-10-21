@@ -73,6 +73,34 @@ module Components {
     telemetry SlipThr22Us: U32
     @ Run time of attribution-table thread 23 inside slipped ticks, mean microseconds per slipped tick
     telemetry SlipThr23Us: U32
+    @ Stream frames superseded before the streamer picked them up, this window (from FrameStreamer)
+    telemetry SkipCount: U32
+    @ Mean age (publish to supersede) of those frames, microseconds
+    telemetry SkipAgeAvgUs: U32
+    telemetry SkipThr00Us: U32
+    telemetry SkipThr01Us: U32
+    telemetry SkipThr02Us: U32
+    telemetry SkipThr03Us: U32
+    telemetry SkipThr04Us: U32
+    telemetry SkipThr05Us: U32
+    telemetry SkipThr06Us: U32
+    telemetry SkipThr07Us: U32
+    telemetry SkipThr08Us: U32
+    telemetry SkipThr09Us: U32
+    telemetry SkipThr10Us: U32
+    telemetry SkipThr11Us: U32
+    telemetry SkipThr12Us: U32
+    telemetry SkipThr13Us: U32
+    telemetry SkipThr14Us: U32
+    telemetry SkipThr15Us: U32
+    telemetry SkipThr16Us: U32
+    telemetry SkipThr17Us: U32
+    telemetry SkipThr18Us: U32
+    telemetry SkipThr19Us: U32
+    telemetry SkipThr20Us: U32
+    telemetry SkipThr21Us: U32
+    telemetry SkipThr22Us: U32
+    telemetry SkipThr23Us: U32
     @ Snapshot and report the window
     sync input port schedIn: Svc.Sched
 

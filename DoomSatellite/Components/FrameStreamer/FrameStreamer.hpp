@@ -99,6 +99,14 @@ class FrameStreamer final : public FrameStreamerComponentBase {
     U32 m_sendAgain;  //!< a send failed since the last successful chunk (event rate limit)
     U32 m_txTimeMaxUs;
     U32 m_copyTimeMaxUs;
+    U32 m_kicksDropped;
+    U32 m_replaySuppressed;
+    U32 m_publishTick;        //!< engine tick sequence of the last publish
+    U32 m_publishCycles;      //!< k_cycle_get_32() at the last publish
+    U64 m_publishThreads[24]; //!< thread run-time sample at the last publish (skip attribution)
+    U64 m_pickupSumUs;
+    U32 m_pickupCount;
+    U32 m_pickupMaxUs;
     U32 m_lastTlmSeconds;
     U8 m_datagram[DATAGRAM_MAX_BYTES];
 };

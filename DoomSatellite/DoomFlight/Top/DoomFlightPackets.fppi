@@ -115,6 +115,32 @@ telemetry packets DoomFlightPackets {
     engineProfiler.SlipThr21Us
     engineProfiler.SlipThr22Us
     engineProfiler.SlipThr23Us
+    engineProfiler.SkipCount
+    engineProfiler.SkipAgeAvgUs
+    engineProfiler.SkipThr00Us
+    engineProfiler.SkipThr01Us
+    engineProfiler.SkipThr02Us
+    engineProfiler.SkipThr03Us
+    engineProfiler.SkipThr04Us
+    engineProfiler.SkipThr05Us
+    engineProfiler.SkipThr06Us
+    engineProfiler.SkipThr07Us
+    engineProfiler.SkipThr08Us
+    engineProfiler.SkipThr09Us
+    engineProfiler.SkipThr10Us
+    engineProfiler.SkipThr11Us
+    engineProfiler.SkipThr12Us
+    engineProfiler.SkipThr13Us
+    engineProfiler.SkipThr14Us
+    engineProfiler.SkipThr15Us
+    engineProfiler.SkipThr16Us
+    engineProfiler.SkipThr17Us
+    engineProfiler.SkipThr18Us
+    engineProfiler.SkipThr19Us
+    engineProfiler.SkipThr20Us
+    engineProfiler.SkipThr21Us
+    engineProfiler.SkipThr22Us
+    engineProfiler.SkipThr23Us
     frameHandoff.FramesIn
     frameHandoff.FramesOut
     frameHandoff.FramesOverwritten
@@ -132,6 +158,10 @@ telemetry packets DoomFlightPackets {
     frameStreamer.SendErrors
     frameStreamer.TxTimeMaxUs
     frameStreamer.CopyTimeMaxUs
+    frameStreamer.KicksDropped
+    frameStreamer.ReplaySuppressed
+    frameStreamer.PickupAvgUs
+    frameStreamer.PickupMaxUs
   }
 
   packet DoomPalette id 0x101 group 1 {

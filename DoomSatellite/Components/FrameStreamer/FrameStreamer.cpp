@@ -13,6 +13,7 @@
 #include "Fw/Types/Assert.hpp"
 #include "Os/RawTime.hpp"
 #include "Os/Task.hpp"
+#include "DoomSatellite/Components/EngineProfiler/EngineHooks.h"
 
 namespace Components {
 
@@ -57,6 +58,14 @@ FrameStreamer::FrameStreamer(const char* const compName)
       m_sendAgain(0),
       m_txTimeMaxUs(0),
       m_copyTimeMaxUs(0),
+      m_kicksDropped(0),
+      m_replaySuppressed(0),
+      m_publishTick(0),
+      m_publishCycles(0),
+      m_publishThreads(),
+      m_pickupSumUs(0),
+      m_pickupCount(0),
+      m_pickupMaxUs(0),
       m_lastTlmSeconds(0) {
     (void)::memset(this->m_address, 0, sizeof(this->m_address));
     (void)::memset(this->m_datagram, 0, sizeof(this->m_datagram));
@@ -102,18 +111,33 @@ void FrameStreamer::capture(const U8* pixels, const U8* bgra) {
     if ((this->m_captured % divisor) != 0) {
         return;
     }
+    // A screen wipe draws ~40 frames a millisecond or two apart inside one engine tick, and after a stall the rate
+    // group replays its queued cycles back-to-back; in both cases this thread runs at a priority above the streamer,
+    // so every frame but the last would be superseded unseen. Publish one frame per tick and none from catch-up
+    // ticks; count the rest as replay.
+    const U32 tick = engine_hooks_tick_seq();
+    if (((this->m_publishCycles != 0) && (tick == this->m_publishTick)) || (engine_hooks_tick_is_catchup() != 0)) {
+        this->m_replaySuppressed++;
+        return;
+    }
+    this->m_publishTick = tick;
+
     Os::RawTime start;
     (void)start.now();
 
     FwIndexType target = NO_SLOT;
     this->m_lock.lock();
     target = (this->m_delivering == 0) ? 1 : 0;
-    if (this->m_published != NO_SLOT) {
+    const bool superseded = (this->m_published != NO_SLOT);
+    if (superseded) {
         // Published but not yet picked up: superseded by this frame
         this->m_framesSkipped++;
         this->m_published = NO_SLOT;
     }
     this->m_lock.unlock();
+    if (superseded) {
+        engine_hooks_account_skip(this->m_publishThreads, k_cycle_get_32() - this->m_publishCycles);
+    }
 
     Slot& slot = this->m_slots[target];
     (void)::memcpy(slot.pixels, pixels, FRAME_BYTES);
@@ -127,13 +151,18 @@ void FrameStreamer::capture(const U8* pixels, const U8* bgra) {
 
     this->m_lock.lock();
     this->m_published = target;
+    this->m_publishCycles = k_cycle_get_32();
     this->m_lock.unlock();
+    engine_hooks_sample_threads(this->m_publishThreads);
 
     Os::RawTime end;
     (void)end.now();
     U32 elapsedUs = 0;
     if ((end.getDiffUsec(start, elapsedUs) == Os::RawTime::OP_OK) && (elapsedUs > this->m_copyTimeMaxUs)) {
         this->m_copyTimeMaxUs = elapsedUs;
+    }
+    if (this->m_queue.getMessagesAvailable() >= 2) {
+        this->m_kicksDropped++;  // queue depth 2: the kick is dropped and the frame waits for the next one
     }
     this->deliver_internalInterfaceInvoke();
 }
@@ -147,7 +176,16 @@ void FrameStreamer::deliver_internalInterfaceHandler() {
     const FwIndexType slot = this->m_published;
     this->m_published = NO_SLOT;
     this->m_delivering = slot;
+    const U32 publishCycles = this->m_publishCycles;
     this->m_lock.unlock();
+    if (slot != NO_SLOT) {
+        const U32 pickupUs = static_cast<U32>((static_cast<U64>(k_cycle_get_32() - publishCycles) * 1000000ULL) / sys_clock_hw_cycles_per_sec());
+        this->m_pickupSumUs += pickupUs;
+        this->m_pickupCount++;
+        if (pickupUs > this->m_pickupMaxUs) {
+            this->m_pickupMaxUs = pickupUs;
+        }
+    }
 
     if (slot != NO_SLOT) {
         // No carrier: drop the frame (counted) instead of handing it to a transmit path that cannot complete
@@ -326,6 +364,12 @@ void FrameStreamer::writeTelemetry() {
     }
     this->tlmWrite_TxTimeMaxUs(this->m_txTimeMaxUs, now);
     this->tlmWrite_CopyTimeMaxUs(this->m_copyTimeMaxUs, now);
+    this->tlmWrite_KicksDropped(this->m_kicksDropped, now);
+    this->tlmWrite_ReplaySuppressed(this->m_replaySuppressed, now);
+    this->tlmWrite_PickupAvgUs((this->m_pickupCount > 0) ? static_cast<U32>(this->m_pickupSumUs / this->m_pickupCount) : 0U, now);
+    this->m_pickupSumUs = 0;
+    this->m_pickupCount = 0;
+    this->tlmWrite_PickupMaxUs(this->m_pickupMaxUs, now);
 }
 
 void FrameStreamer::reportState() {
