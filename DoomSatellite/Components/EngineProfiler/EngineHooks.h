@@ -16,6 +16,7 @@
 #define Components_EngineHooks_H
 
 #include <stdint.h>
+#define ENGINE_HOOKS_MAX_THREADS 24
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +34,21 @@ struct engine_hooks_stats {
     struct engine_hooks_phase blit;
     struct engine_hooks_phase emit;
     uint32_t cycles_per_second; //!< CPU cycle counter rate
+    uint64_t tick_cpu_cycles;   //!< Sum of the DOOM thread's own run time over all ticks in the window
+    uint32_t slip_ticks;        //!< Ticks with wall time in [slip, stall)
+    uint32_t stall_ticks;       //!< Ticks with wall time >= stall (level switch class)
+    uint64_t slip_wall_cycles;  //!< Sum of wall time of slipped ticks
+    uint64_t slip_cpu_cycles;   //!< Sum of the DOOM thread's own run time inside slipped ticks
+    uint64_t stall_wall_cycles; //!< Sum of wall time of stalled ticks
+    uint64_t stall_cpu_cycles;  //!< Sum of the DOOM thread's own CPU time inside stalled ticks
+    uint64_t stall_idle_cycles; //!< Sum of idle-thread time inside stalled ticks
+    uint32_t thread_count;      //!< Threads in the attribution table
+    uint64_t slip_thread_cycles[ENGINE_HOOKS_MAX_THREADS]; //!< Run time of each table thread inside slipped ticks
 };
+//! Enumerates the kernel threads once (call after the topology has started) for per-slip attribution
+void engine_hooks_threads_init(void);
+//! Name and priority of table thread i; returns 0 if i is out of range
+int engine_hooks_thread_info(uint32_t i, const char** name, int* prio);
 
 //! Copy the counters accumulated since the previous call and reset them. Safe to call from any thread.
 void engine_hooks_snapshot(struct engine_hooks_stats* out);

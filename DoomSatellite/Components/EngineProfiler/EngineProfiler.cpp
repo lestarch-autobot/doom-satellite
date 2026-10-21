@@ -9,7 +9,7 @@
 
 namespace Components {
 
-EngineProfiler::EngineProfiler(const char* const compName) : EngineProfilerComponentBase(compName), m_cpuPrev{}, m_cpuPrevTotal(0) {}
+EngineProfiler::EngineProfiler(const char* const compName) : EngineProfilerComponentBase(compName), m_cpuPrev{}, m_cpuPrevTotal(0), m_threadInfoNext(0) {}
 
 EngineProfiler::~EngineProfiler() {}
 
@@ -56,6 +56,52 @@ void EngineProfiler::schedIn_handler(FwIndexType portNum, U32 context) {
     this->tlmWrite_BlitAvgUs(avgUs[2]);
     this->tlmWrite_EmitMaxUs(maxUs[3]);
     this->tlmWrite_EmitAvgUs(avgUs[3]);
+
+    engine_hooks_threads_init();
+    const char* name = nullptr;
+    int prio = 0;
+    if (engine_hooks_thread_info(this->m_threadInfoNext, &name, &prio) != 0) {
+        this->log_ACTIVITY_HI_ThreadInfo(static_cast<U8>(this->m_threadInfoNext), static_cast<I8>(prio), Fw::String(name));
+        this->m_threadInfoNext++;
+    } else {
+        this->m_threadInfoNext = 0;  // table exhausted: re-announce so a late-attaching ground sees it
+    }
+    this->tlmWrite_TickCpuAvgUs((stats.tick.count > 0) ? toUs(stats.tick_cpu_cycles / stats.tick.count, hz) : 0U);
+    this->tlmWrite_SlipTicks(stats.slip_ticks);
+    this->tlmWrite_StallTicks(stats.stall_ticks);
+    this->tlmWrite_SlipWallAvgUs((stats.slip_ticks > 0) ? toUs(stats.slip_wall_cycles / stats.slip_ticks, hz) : 0U);
+    this->tlmWrite_SlipCpuAvgUs((stats.slip_ticks > 0) ? toUs(stats.slip_cpu_cycles / stats.slip_ticks, hz) : 0U);
+    this->tlmWrite_StallWallAvgUs((stats.stall_ticks > 0) ? toUs(stats.stall_wall_cycles / stats.stall_ticks, hz) : 0U);
+    this->tlmWrite_StallCpuAvgUs((stats.stall_ticks > 0) ? toUs(stats.stall_cpu_cycles / stats.stall_ticks, hz) : 0U);
+    this->tlmWrite_StallIdleAvgUs((stats.stall_ticks > 0) ? toUs(stats.stall_idle_cycles / stats.stall_ticks, hz) : 0U);
+    U32 thr[ENGINE_HOOKS_MAX_THREADS] = {};
+    for (U32 i = 0; i < ENGINE_HOOKS_MAX_THREADS; i++) {
+        thr[i] = (stats.slip_ticks > 0) ? toUs(stats.slip_thread_cycles[i] / stats.slip_ticks, hz) : 0U;
+    }
+    this->tlmWrite_SlipThr00Us(thr[0]);
+    this->tlmWrite_SlipThr01Us(thr[1]);
+    this->tlmWrite_SlipThr02Us(thr[2]);
+    this->tlmWrite_SlipThr03Us(thr[3]);
+    this->tlmWrite_SlipThr04Us(thr[4]);
+    this->tlmWrite_SlipThr05Us(thr[5]);
+    this->tlmWrite_SlipThr06Us(thr[6]);
+    this->tlmWrite_SlipThr07Us(thr[7]);
+    this->tlmWrite_SlipThr08Us(thr[8]);
+    this->tlmWrite_SlipThr09Us(thr[9]);
+    this->tlmWrite_SlipThr10Us(thr[10]);
+    this->tlmWrite_SlipThr11Us(thr[11]);
+    this->tlmWrite_SlipThr12Us(thr[12]);
+    this->tlmWrite_SlipThr13Us(thr[13]);
+    this->tlmWrite_SlipThr14Us(thr[14]);
+    this->tlmWrite_SlipThr15Us(thr[15]);
+    this->tlmWrite_SlipThr16Us(thr[16]);
+    this->tlmWrite_SlipThr17Us(thr[17]);
+    this->tlmWrite_SlipThr18Us(thr[18]);
+    this->tlmWrite_SlipThr19Us(thr[19]);
+    this->tlmWrite_SlipThr20Us(thr[20]);
+    this->tlmWrite_SlipThr21Us(thr[21]);
+    this->tlmWrite_SlipThr22Us(thr[22]);
+    this->tlmWrite_SlipThr23Us(thr[23]);
 }
 
 }  // namespace Components

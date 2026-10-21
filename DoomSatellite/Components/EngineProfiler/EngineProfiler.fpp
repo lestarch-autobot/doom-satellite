@@ -7,6 +7,72 @@ module Components {
   @ copy) and emit (frame emission and everything wired downstream of it); tick is the whole doomgeneric_Tick call.
   passive component EngineProfiler {
 
+    @ Mean of the DOOM thread's own run time per tick (CPU, excludes preemption), microseconds
+    telemetry TickCpuAvgUs: U32
+    @ Ticks in the window whose wall time was 33-100 ms (steady-state slips)
+    telemetry SlipTicks: U32
+    @ Ticks in the window whose wall time was >= 100 ms (level-switch class stalls)
+    telemetry StallTicks: U32
+    @ Mean wall time of slipped ticks, microseconds
+    telemetry SlipWallAvgUs: U32
+    @ Mean of the DOOM thread's own run time inside slipped ticks, microseconds
+    telemetry SlipCpuAvgUs: U32
+    @ Mean wall time of stalled ticks, microseconds
+    telemetry StallWallAvgUs: U32
+    @ Mean DOOM-thread CPU time of ticks >= 100 ms wall (level/demo switch class)
+    telemetry StallCpuAvgUs: U32
+    @ Mean idle-thread time inside ticks >= 100 ms wall
+    telemetry StallIdleAvgUs: U32
+    @ Kernel thread table entry for per-slip attribution (index, priority, name); one per second after start
+    event ThreadInfo(index: U8, prio: I8, name: string size 24) severity activity high format "thread {} prio {} {}"
+    @ Run time of attribution-table thread 00 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr00Us: U32
+    @ Run time of attribution-table thread 01 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr01Us: U32
+    @ Run time of attribution-table thread 02 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr02Us: U32
+    @ Run time of attribution-table thread 03 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr03Us: U32
+    @ Run time of attribution-table thread 04 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr04Us: U32
+    @ Run time of attribution-table thread 05 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr05Us: U32
+    @ Run time of attribution-table thread 06 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr06Us: U32
+    @ Run time of attribution-table thread 07 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr07Us: U32
+    @ Run time of attribution-table thread 08 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr08Us: U32
+    @ Run time of attribution-table thread 09 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr09Us: U32
+    @ Run time of attribution-table thread 10 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr10Us: U32
+    @ Run time of attribution-table thread 11 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr11Us: U32
+    @ Run time of attribution-table thread 12 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr12Us: U32
+    @ Run time of attribution-table thread 13 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr13Us: U32
+    @ Run time of attribution-table thread 14 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr14Us: U32
+    @ Run time of attribution-table thread 15 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr15Us: U32
+    @ Run time of attribution-table thread 16 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr16Us: U32
+    @ Run time of attribution-table thread 17 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr17Us: U32
+    @ Run time of attribution-table thread 18 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr18Us: U32
+    @ Run time of attribution-table thread 19 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr19Us: U32
+    @ Run time of attribution-table thread 20 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr20Us: U32
+    @ Run time of attribution-table thread 21 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr21Us: U32
+    @ Run time of attribution-table thread 22 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr22Us: U32
+    @ Run time of attribution-table thread 23 inside slipped ticks, mean microseconds per slipped tick
+    telemetry SlipThr23Us: U32
     @ Snapshot and report the window
     sync input port schedIn: Svc.Sched
 
@@ -51,6 +117,10 @@ module Components {
 
     @ Telemetry port
     telemetry port tlmOut
+
+    event port eventOut
+
+    text event port logTextOut
     @ Time get port
     time get port timeCaller
   }

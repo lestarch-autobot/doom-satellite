@@ -106,19 +106,21 @@ module DoomFlight {
   instance frameAdapter: Components.FrameBufferAdapter base id 0x1001D000
 
   @ Copies each downsampled frame off the DOOM thread and delivers it to frameRepeater from its own thread. Priority
-  @ 10 is below rateGroupDoom (9): the row telemetry and hub packing downstream only get the time the engine leaves.
+  @ 11 is below rateGroupDoom (9) and frameStreamer (10): the row telemetry and hub packing downstream only get the
+  @ time the engine and the stream leave (sharing priority 10 with the streamer made it skip frames).
   @ Queue 2: one kick per frame, dropped when full (latest wins in the slots).
   instance frameHandoff: Components.FrameHandoff base id 0x1001F000 \
     queue size 2 \
     stack size Default.STACK_SIZE \
-    priority 10
+    priority 11
 
-  @ Streams the native 320x200 frame to the coprocessor over raw UDP from its own thread. Priority 11: below the
-  @ engine and below frameHandoff's row telemetry; a frame still in flight is simply replaced (latest wins).
+  @ Streams the native 320x200 frame to the coprocessor over raw UDP from its own thread. Priority 10: below the
+  @ engine (above it, the 46-chunk burst preempted the DOOM tick and the rate group slipped), above frameHandoff's row
+  @ telemetry; a frame still in flight is simply replaced (latest wins).
   instance frameStreamer: Components.FrameStreamer base id 0x10020000 \
     queue size 2 \
     stack size Default.STACK_SIZE \
-    priority 8
+    priority 10
 
   @ Per-phase CPU budget of the DOOM tick (EngineHooks.c), reported at 1 Hz
   instance engineProfiler: Components.EngineProfiler base id 0x1001E000

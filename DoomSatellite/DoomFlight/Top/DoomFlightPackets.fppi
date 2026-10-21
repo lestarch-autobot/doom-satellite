@@ -83,6 +83,38 @@ telemetry packets DoomFlightPackets {
     engineProfiler.BlitAvgUs
     engineProfiler.EmitMaxUs
     engineProfiler.EmitAvgUs
+    engineProfiler.TickCpuAvgUs
+    engineProfiler.SlipTicks
+    engineProfiler.StallTicks
+    engineProfiler.SlipWallAvgUs
+    engineProfiler.SlipCpuAvgUs
+    engineProfiler.StallWallAvgUs
+    engineProfiler.StallCpuAvgUs
+    engineProfiler.StallIdleAvgUs
+    engineProfiler.SlipThr00Us
+    engineProfiler.SlipThr01Us
+    engineProfiler.SlipThr02Us
+    engineProfiler.SlipThr03Us
+    engineProfiler.SlipThr04Us
+    engineProfiler.SlipThr05Us
+    engineProfiler.SlipThr06Us
+    engineProfiler.SlipThr07Us
+    engineProfiler.SlipThr08Us
+    engineProfiler.SlipThr09Us
+    engineProfiler.SlipThr10Us
+    engineProfiler.SlipThr11Us
+    engineProfiler.SlipThr12Us
+    engineProfiler.SlipThr13Us
+    engineProfiler.SlipThr14Us
+    engineProfiler.SlipThr15Us
+    engineProfiler.SlipThr16Us
+    engineProfiler.SlipThr17Us
+    engineProfiler.SlipThr18Us
+    engineProfiler.SlipThr19Us
+    engineProfiler.SlipThr20Us
+    engineProfiler.SlipThr21Us
+    engineProfiler.SlipThr22Us
+    engineProfiler.SlipThr23Us
     frameHandoff.FramesIn
     frameHandoff.FramesOut
     frameHandoff.FramesOverwritten

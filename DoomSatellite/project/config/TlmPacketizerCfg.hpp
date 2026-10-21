@@ -19,7 +19,7 @@ namespace Svc {
 static const FwChanIdType MAX_PACKETIZER_PACKETS = 64;
 
 //! Maximum number of channels that the packetizer can handle. Must be >= number of non-omitted channels
-static const FwChanIdType MAX_PACKETIZER_CHANNELS = 192;
+static const FwChanIdType MAX_PACKETIZER_CHANNELS = 256;
 
 //! Maximum number of missing channels to track and report
 static const FwChanIdType TLMPACKETIZER_MAX_MISSING_TLM_CHECK = 1;

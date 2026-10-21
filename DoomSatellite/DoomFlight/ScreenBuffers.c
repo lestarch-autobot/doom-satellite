@@ -25,10 +25,14 @@
 
 static uint8_t __dtcm_bss_section __aligned(32) video_buffer[SCREEN_BYTES];   // I_VideoBuffer
 static uint8_t __dtcm_bss_section __aligned(32) screen_buffer[SCREEN_BYTES];  // DG_ScreenBuffer
-/* Latest-wins slots Components::FrameStreamer copies the native frame into on the engine thread (PSRAM: OCRAM has
- * no room for two more frames; the ~1 ms copy is paid by the engine, the send by the streamer thread). */
+/* Latest-wins slots Components::FrameStreamer copies the native frame into on the engine thread. Slot 0, the one the
+ * streamer prefers whenever it is not being delivered (nearly every frame at 30 fps), is in OCRAM: the engine's copy
+ * into FlexSPI PSRAM cost 2.5 ms per tick, into OCRAM far less, and the streamer reads chunks back faster. Slot 1
+ * stays in PSRAM: a second OCRAM frame leaves the kernel heap too small for the rate-group queues (init assert). */
 #define STREAM_SLOTS 2U
-static uint8_t Z_GENERIC_SECTION(PSRAM) __aligned(32) stream_slots[STREAM_SLOTS][SCREEN_BYTES];
+static uint8_t __aligned(32) stream_slot0[SCREEN_BYTES];
+static uint8_t Z_GENERIC_SECTION(PSRAM) __aligned(32) stream_slot1[SCREEN_BYTES];
+static uint8_t* const stream_slots[STREAM_SLOTS] = {stream_slot0, stream_slot1};
 
 static int video_buffer_claimed;
 static int screen_buffer_claimed;

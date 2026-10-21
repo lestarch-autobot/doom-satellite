@@ -51,14 +51,20 @@ constexpr FwSizeType DOOM_RATE_HZ = 30;
 // the engine down to ~22 Hz; 2 Hz keeps it at ~29 Hz with ~300 rate group slips/min (1 Hz: ~16/min). A higher
 // ground rate needs a cheaper encoding than 51 channel packets per frame.
 constexpr FwSizeType TLM_RATE_HZ = 15;
+constexpr FwSizeType DOOM_PERIOD_MS = getRateGroupPeriod(DOOM_RATE_HZ);  // 33
+constexpr FwSizeType DOWNLINK_PHASE_MS = 20;  // after the DOOM tick's ~18 ms wall, before the next post
 
 // The 1 kHz base timer is divided into the 10Hz, 1Hz and DOOM rate groups with 0 offset
 Svc::RateGroupDriver::DividerSet rateGroupDivisorsSet{{
     // Array of divider objects
-    {getRateGroupPeriod(10), 0},            // 10Hz
-    {getRateGroupPeriod(1), 0},             // 1Hz
-    {getRateGroupPeriod(DOOM_RATE_HZ), 0},  // DOOM
-    {getRateGroupPeriod(TLM_RATE_HZ), 0},   // telemetry packetizer (ground frame rate)
+    // The DOOM group fires on every 33rd driver tick (offset 0) and its tick runs ~10 ms CPU / ~18 ms wall from the
+    // post. The other groups are phase-locked to DOOM cycles (periods are multiples of 33 ms) and offset so their
+    // posts land after the tick has finished: the downlink burst at +20 ms of every other cycle, the 1 Hz work at
+    // +20 ms of a cycle without a downlink burst, so neither coincides with a DOOM tick or with each other.
+    {3 * DOOM_PERIOD_MS, DOWNLINK_PHASE_MS},                     // "10Hz" (10.1 Hz)
+    {30 * DOOM_PERIOD_MS, DOWNLINK_PHASE_MS + DOOM_PERIOD_MS},   // "1Hz" (1.01 Hz)
+    {DOOM_PERIOD_MS, 0},                                        // DOOM (30.3 Hz)
+    {2 * DOOM_PERIOD_MS, DOWNLINK_PHASE_MS},                     // telemetry packetizer (15.15 Hz ground frame rate)
 }};
 
 // Rate groups may supply a context token to each of the attached children whose purpose is set by the project. The

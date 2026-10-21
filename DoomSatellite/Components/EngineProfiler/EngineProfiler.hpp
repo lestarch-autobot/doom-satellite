@@ -31,6 +31,7 @@ class EngineProfiler final : public EngineProfilerComponentBase {
     static U32 s_resetCause;
     U64 m_cpuPrev[6];      //!< previous-window cycle totals per bucket
     U64 m_cpuPrevTotal;
+    U32 m_threadInfoNext;  //!< next attribution-table index to announce via ThreadInfo
 };
 
 }  // namespace Components
