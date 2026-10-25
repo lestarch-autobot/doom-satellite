@@ -35,6 +35,7 @@ using Doom::KeyEventPortSerializer;
 #include "Doom/DoomConfig/FppConstantsAc.hpp"
 #include "Doom/DoomSubtopology/SubtopologyTopologyDefs.hpp"
 
+
 /**
  * \brief required ping constants
  *
@@ -83,7 +84,9 @@ namespace DoomFlight {
  * contents are entirely up to the definition of the project. This deployment uses subtopologies.
  */
 struct TopologyState {
-    const device* uartDevice;             //!< USB CDC ACM UART carrying the ground link and the touch reset
+    const device* uartDevice;             //!< USB CDC ACM UART carrying the console and the touch reset
+    const device* groundUartDevice;       //!< UART carrying the F Prime ground link (XBee or the CDC ACM UART)
+    enum uart_config_flow_control groundFlowControl;  //!< Flow control of the ground link UART
     U32 baudRate;                         //!< Baud rate for the ground link UART
     const char* hubRemoteAddress;         //!< IPv4 address of the remote GenericHub deployment
     U16 hubRemotePort;                    //!< UDP port the remote GenericHub receives on

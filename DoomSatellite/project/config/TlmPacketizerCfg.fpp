@@ -46,8 +46,10 @@ module Svc {
         [
             # Group 0
             DEFAULT_GROUP_CONFIG,
-            # Group 1
-            DEFAULT_GROUP_CONFIG,
+            # Group 1: health, engine and ground frame packets, 10 packets of one 1064-byte TM frame each. At most every
+            # 20th packetizer tick (0.76 Hz at 15.15 Hz) to fit the XBee ground link (115200 baud, ~11 kB/s).
+            # CONFIGURE_GROUP_RATES retunes it at run time.
+            { enabled = Fw.Enabled.ENABLED, forceEnabled = Fw.Enabled.DISABLED, rateLogic = RateLogic.ON_CHANGE_MIN, min = 20, max = 0 },
             # Group 2
             DEFAULT_GROUP_CONFIG,
             # Group 3

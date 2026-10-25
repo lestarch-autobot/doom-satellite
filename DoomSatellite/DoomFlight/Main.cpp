@@ -26,6 +26,13 @@
 #include <cstring>
 
 const struct device* serial = DEVICE_DT_GET(DT_NODELABEL(cdc_acm_uart0));
+#if DT_HAS_CHOSEN(doom_ground_uart)
+const struct device* groundUart = DEVICE_DT_GET(DT_CHOSEN(doom_ground_uart));
+static constexpr enum uart_config_flow_control GROUND_FLOW_CONTROL = UART_CFG_FLOW_CTRL_RTS_CTS;
+#else
+const struct device* groundUart = serial;
+static constexpr enum uart_config_flow_control GROUND_FLOW_CONTROL = UART_CFG_FLOW_CTRL_NONE;
+#endif
 #if defined(CONFIG_BOARD_TEENSY41)
 extern "C" void psram_heap_report(void);     // PsramHeap.c
 extern "C" void screen_buffers_report(void);  // ScreenBuffers.c
@@ -239,6 +246,8 @@ int main(int argc, char* argv[]) {
     // Object for communicating state to the topology
     DoomFlight::TopologyState inputs;
     inputs.uartDevice = serial;
+    inputs.groundUartDevice = groundUart;
+    inputs.groundFlowControl = GROUND_FLOW_CONTROL;
     inputs.baudRate = 115200;
     inputs.hubRemoteAddress = "192.168.11.1";
     inputs.hubRemotePort = 50555;

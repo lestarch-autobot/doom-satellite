@@ -199,8 +199,9 @@ void setupTopology(const TopologyState& state) {
         printk("DoomFlight: auto-start: doom.forceStart() returned %s\n", status.toChar());
     }
 
-    comDriver.configure(state.uartDevice, state.baudRate);
+    comDriver.configure(state.groundUartDevice, state.baudRate, state.groundFlowControl);
 #if defined(CONFIG_USBD_CDC_ACM_CLASS)
+    // The CDC ACM UART is also the console: without this, console writes stall while no host has the port open
     cdcUartDevice = state.uartDevice;
     k_work_init_delayable(&cdcFlowControlWork, updateCdcFlowControl);
     (void)k_work_schedule(&cdcFlowControlWork, K_NO_WAIT);
