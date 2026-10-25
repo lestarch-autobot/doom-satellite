@@ -24,7 +24,7 @@ module Components {
     @ Mean idle-thread time inside ticks >= 100 ms wall
     telemetry StallIdleAvgUs: U32
     @ Kernel thread table entry for per-slip attribution (index, priority, name); one per second after start
-    event ThreadInfo(index: U8, prio: I8, name: string size 24) severity activity high format "thread {} prio {} {}"
+    event ThreadInfo(index: U8, prio: I8, name: string size 24) severity diagnostic format "thread {} prio {} {}"
     @ Run time of attribution-table thread 00 inside slipped ticks, mean microseconds per slipped tick
     telemetry SlipThr00Us: U32
     @ Run time of attribution-table thread 01 inside slipped ticks, mean microseconds per slipped tick

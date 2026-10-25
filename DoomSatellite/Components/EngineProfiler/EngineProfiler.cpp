@@ -61,7 +61,7 @@ void EngineProfiler::schedIn_handler(FwIndexType portNum, U32 context) {
     const char* name = nullptr;
     int prio = 0;
     if (engine_hooks_thread_info(this->m_threadInfoNext, &name, &prio) != 0) {
-        this->log_ACTIVITY_HI_ThreadInfo(static_cast<U8>(this->m_threadInfoNext), static_cast<I8>(prio), Fw::String(name));
+        this->log_DIAGNOSTIC_ThreadInfo(static_cast<U8>(this->m_threadInfoNext), static_cast<I8>(prio), Fw::String(name));
         this->m_threadInfoNext++;
     } else {
         this->m_threadInfoNext = 0;  // table exhausted: re-announce so a late-attaching ground sees it
