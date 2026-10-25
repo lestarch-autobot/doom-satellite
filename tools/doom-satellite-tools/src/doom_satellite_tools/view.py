@@ -9,6 +9,11 @@ Two frame sources:
 * ``yamcs``: polls the FrameRow000..FrameRow<rows-1> and PaletteOut channels from a running fprime-yamcs through its
   REST API (``parameters:batchGet``), i.e. the frames that reach the ground over the USB CDC UART.
 
+Drawing is event-driven: each accepted frame wakes the Tk main loop (a socketpair registered as a Tk file handler),
+which draws the newest frame at once. Frames that arrive while a draw is in progress are replaced by newer ones
+(latest-wins, one slot), so the window never falls behind the stream. Where Tk has no file handlers (Windows) the
+main loop polls at ``--redraw-hz`` instead.
+
 Keyboard: W/A/S/D and the arrows move and turn, Space uses, Ctrl fires, Shift runs, Tab toggles the automap, Esc and
 Enter drive the menu, Y/N answer prompts, 1-7 select weapons. Presses and releases go to Components.DoomKeyBridge on
 DoomCoprocessor as ``DKEY`` datagrams (``--keys host:port``), which forwards them over the hub to the engine's
@@ -40,6 +45,7 @@ KEY_MAGIC = b"DKEY"
 # Larger (native) frames take precedence over smaller (downsampled) ones for this long after the last one
 PREFER_LARGE_SECONDS = 2.0
 FPS_WINDOW_SECONDS = 60.0
+REPORT_SECONDS = 10.0
 
 # Tk keysym -> Doom.DoomKey code (lib/fprime-stress/Doom/Doom.fpp)
 DOOM_KEYS = {
@@ -69,6 +75,8 @@ class FrameStore:
         self.started = time.monotonic()
         self.last_large = (0, 0.0)  # (pixel count, monotonic time) of the last frame accepted
         self.arrivals = []  # monotonic arrival times of accepted frames, FPS_WINDOW_SECONDS deep
+        self.max_gap = 0.0  # longest gap between accepted frames since the last take_max_gap()
+        self.wake = None  # called (from the source thread) after each accepted frame
 
     def put_frame(self, number, width, height, pixels):
         now = time.monotonic()
@@ -81,10 +89,21 @@ class FrameStore:
             self.last_large = (count, now)
             self.frame = (number, width, height, pixels)
             self.frames += 1
+            if self.arrivals:
+                self.max_gap = max(self.max_gap, now - self.arrivals[-1])
             self.arrivals.append(now)
             cutoff = now - FPS_WINDOW_SECONDS
             while self.arrivals and self.arrivals[0] < cutoff:
                 self.arrivals.pop(0)
+            wake = self.wake
+        if wake is not None:
+            wake()
+
+    def take_max_gap(self):
+        """Longest gap between accepted frames since the previous call, in seconds"""
+        with self.lock:
+            gap, self.max_gap = self.max_gap, 0.0
+            return gap
 
     def window_fps(self):
         """Accepted frames per second over the last FPS_WINDOW_SECONDS (or since the first frame if younger)"""
@@ -223,20 +242,18 @@ class KeySender:
             self.release(code)
 
 
-def render_ppm(width, height, pixels, palette, scale):
-    """Palette-indexed pixels -> binary PPM, already scaled (numpy) or unscaled (pure Python, caller zooms)"""
+def render_ppm(width, height, pixels, palette):
+    """Palette-indexed pixels -> unscaled binary PPM (numpy when present, else pure Python)"""
     if np is not None:
         lut = np.frombuffer(palette, dtype=np.uint8).reshape(256, 3)
-        rgb = lut[np.frombuffer(pixels, dtype=np.uint8)].reshape(height, width, 3)
-        if scale > 1:
-            rgb = rgb.repeat(scale, axis=0).repeat(scale, axis=1)
-        return b"P6\n%d %d\n255\n" % (width * scale, height * scale) + rgb.tobytes(), True
+        rgb = lut[np.frombuffer(pixels, dtype=np.uint8)]
+        return b"P6\n%d %d\n255\n" % (width, height) + rgb.tobytes()
     table = [palette[3 * i: 3 * i + 3] for i in range(256)]
-    return b"P6\n%d %d\n255\n" % (width, height) + b"".join(table[p] for p in pixels), False
+    return b"P6\n%d %d\n255\n" % (width, height) + b"".join(table[p] for p in pixels)
 
 
 class Viewer:
-    """Tk window redrawing the latest frame at a fixed rate"""
+    """Tk window drawing each new frame as soon as the source thread accepts it"""
 
     def __init__(self, store, scale, title, redraw_hz, keys=None):
         self.store = store
@@ -249,12 +266,43 @@ class Viewer:
         self.label.pack()
         self.status = tk.Label(self.root, text="waiting for frames", fg="#d0d0d0", bg="black", font=("monospace", 10))
         self.status.pack(fill="x")
-        self.image = None
+        self.source = None  # PhotoImage at frame size, refilled per frame
+        self.image = None  # PhotoImage shown in the label (self.source when unscaled)
+        self.geometry = None  # (width, height, scale) the images were made for
         self.drawn = None
         self.drawn_count = 0
+        self.draw_times = []  # seconds per draw since the last report
+        self.drawn_fps = 0.0
         self.keys = KeySender(self.root, keys) if keys else None
         self.last_report = time.monotonic()
-        self.root.after(self.redraw_ms, self.redraw)
+        self.last_report_drawn = 0
+        self.wake_reader, self.wake_writer = socket.socketpair()
+        self.wake_reader.setblocking(False)
+        self.wake_writer.setblocking(False)
+        try:
+            self.root.tk.createfilehandler(self.wake_reader, tk.READABLE, self.on_wake)
+            store.wake = self.notify
+        except (AttributeError, tk.TclError):  # no Tk file handlers (Windows): poll instead
+            self.root.after(self.redraw_ms, self.poll)
+
+    def notify(self):
+        """Source thread: wake the Tk main loop (a full socket means a wake is already pending)"""
+        try:
+            self.wake_writer.send(b"\0")
+        except (BlockingIOError, OSError):
+            pass
+
+    def on_wake(self, _file, _mask):
+        try:
+            while self.wake_reader.recv(4096):
+                pass
+        except (BlockingIOError, OSError):
+            pass
+        self.redraw()
+
+    def poll(self):
+        self.redraw()
+        self.root.after(self.redraw_ms, self.poll)
 
     def frame_scale(self, width):
         """Explicit --scale, else fit roughly 960 pixels wide (3x for 320, 12x for 80)"""
@@ -262,28 +310,43 @@ class Viewer:
             return self.scale
         return max(1, 960 // max(1, width))
 
+    def show(self, width, height, pixels, palette):
+        """Refill the frame-size image and zoom it into the displayed one (Tk does the scaling in C)"""
+        scale = self.frame_scale(width)
+        if self.geometry != (width, height, scale):
+            self.source = tk.PhotoImage(width=width, height=height)
+            self.image = self.source if scale == 1 else tk.PhotoImage(width=width * scale, height=height * scale)
+            self.label.configure(image=self.image)
+            self.geometry = (width, height, scale)
+        self.source.configure(data=render_ppm(width, height, pixels, palette))
+        if scale > 1:
+            self.image.tk.call(self.image, "copy", self.source, "-zoom", scale, scale, "-compositingrule", "set")
+
     def redraw(self):
         frame, palette, count = self.store.snapshot()
-        if frame is not None and frame[0] != self.drawn:
-            number, width, height, pixels = frame
-            scale = self.frame_scale(width)
-            ppm, scaled = render_ppm(width, height, pixels, palette, scale)
-            image = tk.PhotoImage(data=ppm)
-            if scale > 1 and not scaled:
-                image = image.zoom(scale, scale)
-            self.image = image
-            self.label.configure(image=image)
-            self.drawn = number
-            self.drawn_count += 1
-            fps = self.store.window_fps()
-            keys = f"  keys {self.keys.sent}" if self.keys else ""
-            self.status.configure(text=f"frame {number}  {width}x{height}  {count} frames  {fps:.1f} fps (60 s){keys}")
-            now = time.monotonic()
-            if now - self.last_report >= 10.0:
-                print(f"viewer: frames={count} drawn={self.drawn_count} ignored={self.store.ignored} "
-                      f"{width}x{height} {fps:.1f} fps over 60 s", flush=True)
-                self.last_report = now
-        self.root.after(self.redraw_ms, self.redraw)
+        if frame is None or frame[0] == self.drawn:
+            return
+        number, width, height, pixels = frame
+        started = time.monotonic()
+        self.show(width, height, pixels, palette)
+        now = time.monotonic()
+        self.draw_times.append(now - started)
+        self.drawn = number
+        self.drawn_count += 1
+        fps = self.store.window_fps()
+        keys = f"  keys {self.keys.sent}" if self.keys else ""
+        self.status.configure(text=f"frame {number}  {width}x{height}  {count} frames  {fps:.1f} fps in  "
+                                   f"{self.drawn_fps:.1f} drawn{keys}")
+        if now - self.last_report >= REPORT_SECONDS:
+            self.drawn_fps = (self.drawn_count - self.last_report_drawn) / (now - self.last_report)
+            times = sorted(self.draw_times)
+            print(f"viewer: frames={count} drawn={self.drawn_count} ignored={self.store.ignored} "
+                  f"{width}x{height} {fps:.1f} fps over 60 s, drawn {self.drawn_fps:.1f} fps, "
+                  f"draw p50 {1000 * times[len(times) // 2]:.1f} max {1000 * times[-1]:.1f} ms, "
+                  f"max gap {1000 * self.store.take_max_gap():.0f} ms", flush=True)
+            self.last_report = now
+            self.last_report_drawn = self.drawn_count
+            self.draw_times = []
 
     def run(self):
         self.root.mainloop()
@@ -306,7 +369,8 @@ def main():
     parser.add_argument("--keys", default="127.0.0.1:50602",
                         help="host:port of DoomCoprocessor's keyBridge for keyboard input ('' disables; "
                              "default %(default)s)")
-    parser.add_argument("--redraw-hz", type=float, default=30.0, help="window redraw rate (default %(default)s)")
+    parser.add_argument("--redraw-hz", type=float, default=30.0, help="poll rate where Tk has no file handlers (Windows); elsewhere frames draw on arrival "
+                             "(default %(default)s)")
     args = parser.parse_args()
 
     store = FrameStore()
