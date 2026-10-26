@@ -20,6 +20,7 @@ static int render_recorded;
 #define DOOM_PERIOD_MS 33U
 #define SLIP_US (DOOM_PERIOD_MS * 1000U + 1U)
 #define STALL_US 100000U
+#define PHASE_JITTER_MS 2U
 static k_tid_t thread_tids[ENGINE_HOOKS_MAX_THREADS];
 static char thread_names[ENGINE_HOOKS_MAX_THREADS][CONFIG_THREAD_MAX_NAME_LEN];
 static int thread_prios[ENGINE_HOOKS_MAX_THREADS];
@@ -176,7 +177,9 @@ void __wrap_doomgeneric_Tick(void) {
             mode = i;
         }
     }
-    const uint32_t latency_ms = (start_ph + DOOM_PERIOD_MS - mode) % DOOM_PERIOD_MS;
+    /* A start up to PHASE_JITTER_MS before the mode is jitter, not a tick almost a full period late */
+    const uint32_t raw_latency_ms = (start_ph + DOOM_PERIOD_MS - mode) % DOOM_PERIOD_MS;
+    const uint32_t latency_ms = (raw_latency_ms >= (DOOM_PERIOD_MS - PHASE_JITTER_MS)) ? 0U : raw_latency_ms;
     const uint32_t cycles_per_ms = sys_clock_hw_cycles_per_sec() / 1000U;
     const uint32_t lateness = latency_ms * cycles_per_ms + (tick_end - tick_start);
     const int catchup = tick_catchup;
